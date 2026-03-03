@@ -78,3 +78,30 @@ export interface WorkerRuntimeReport {
   outcome: "submitted" | "skipped" | "failed";
   reason?: string;
 }
+
+export interface MissionEvent {
+  cursor: number;
+  topic: string;
+  payload: unknown;
+  createdAt?: number;
+}
+
+export interface WorkerRuntimeCheckpoint {
+  agentId: string;
+  cursor: number;
+  runs: number;
+  submitted: number;
+  skipped: number;
+  failed: number;
+  updatedAt: number;
+  lastMissionId?: string;
+}
+
+export interface WorkerRuntimeLoopReport {
+  iterations: number;
+  cursor: number;
+  submitted: number;
+  skipped: number;
+  failed: number;
+  processedEvents: number;
+}
