@@ -2,33 +2,36 @@
 
 ## Role in the Ecosystem
 
-The SDK sits between application builders and `core`.
+The SDK sits between application/agent builders and `core`.
 
 ```text
 Apps / Agents / Services
           |
          sdk
           |
-       core API
+       core protocol runtime
 ```
 
 ## Design Principles
 
-1. **Typed by default**: expose stable TypeScript types and method contracts.
-2. **Transport-light**: rely on standard `fetch` with pluggable implementation.
-3. **Composable**: SDK should be embeddable in frontends, backends, and agents.
-4. **Protocol-aligned**: public methods mirror `core` bounded contexts.
+1. **Agent-first ergonomics**: support autonomous mission loops, not only request wrappers.
+2. **Typed by default**: expose stable TypeScript contracts.
+3. **Transport-light**: use standard `fetch` with pluggable implementation.
+4. **Composable**: embeddable in frontends, backends, and long-running agent processes.
+5. **Protocol-aligned**: methods and models mirror `core` bounded contexts.
 
 ## Module Plan
 
-- `client`: HTTP transport and endpoint methods
-- `types`: shared request/response contracts
-- future `auth`: signing and token helpers
-- future `events`: subscription abstractions
-- future `adapters`: runtime/platform integrations
+- `client`: transport adapters and basic endpoint methods
+- `types`: shared request/response and protocol-facing contracts
+- `mission` (planned): mission lifecycle helpers
+- `events` (planned): subscriptions, replay cursors, checkpoints
+- `policy` (planned): capability envelopes and guard middleware
+- `evidence` (planned): canonical evidence packaging
+- `agent` (planned): high-level worker/validator runtimes
 
 ## Versioning Strategy
 
-- SDK minor versions track additive API support
-- Breaking protocol changes must be reflected in major version bumps
-- Maintain compatibility matrix with `core` versions
+- SDK minor versions track additive functionality.
+- Breaking protocol changes require major version bump.
+- Compatibility matrix (`core` <-> `sdk`) is maintained in `meta`.
