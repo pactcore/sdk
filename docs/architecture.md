@@ -1,8 +1,6 @@
 # PACT SDK Architecture
 
-## Role in the Ecosystem
-
-The SDK sits between application/agent builders and `core`.
+## 1) Role in the Ecosystem
 
 ```text
 Apps / Agents / Services
@@ -12,26 +10,43 @@ Apps / Agents / Services
        core protocol runtime
 ```
 
-## Design Principles
+SDK is the execution bridge between agent applications and protocol invariants.
 
-1. **Agent-first ergonomics**: support autonomous mission loops, not only request wrappers.
-2. **Typed by default**: expose stable TypeScript contracts.
-3. **Transport-light**: use standard `fetch` with pluggable implementation.
-4. **Composable**: embeddable in frontends, backends, and long-running agent processes.
-5. **Protocol-aligned**: methods and models mirror `core` bounded contexts.
+## 2) Architecture Priorities
 
-## Module Plan
+1. **Runtime-first**: autonomous loops before endpoint breadth
+2. **Typed contracts**: stable TypeScript models and interfaces
+3. **Composable transports**: HTTP now, stream/queue/MCP next
+4. **Deterministic recovery**: cursor + checkpoint semantics
+5. **Policy-aware execution**: capability gating at runtime edges
 
-- `client`: transport adapters and basic endpoint methods
-- `types`: shared request/response and protocol-facing contracts
-- `mission` (planned): mission lifecycle helpers
-- `events` (planned): subscriptions, replay cursors, checkpoints
-- `policy` (planned): capability envelopes and guard middleware
-- `evidence` (planned): canonical evidence packaging
-- `agent` (planned): high-level worker/validator runtimes
+## 3) Module Layout
 
-## Versioning Strategy
+- `client` (implemented): transport primitives and endpoint methods
+- `worker-runtime` (implemented): runOnce/runLoop orchestration
+- `types` (implemented): mission/runtime/event/checkpoint contracts
+- `mission` (planned): local mission graph and conflict helpers
+- `events` (planned): source adapters and replay helpers
+- `policy` (planned): reusable policy packs and evaluators
+- `evidence` (planned): canonical evidence and hash utilities
 
-- SDK minor versions track additive functionality.
-- Breaking protocol changes require major version bump.
-- Compatibility matrix (`core` <-> `sdk`) is maintained in `meta`.
+## 4) Runtime Loop Model
+
+```text
+poll events -> claim mission -> execute -> build evidence -> submit -> checkpoint -> repeat
+```
+
+## 5) Failure Semantics
+
+Worker runtime separates outcomes:
+
+- `submitted`
+- `skipped` (no mission or policy denial)
+- `failed` (execution/runtime errors)
+
+This enables deterministic operator metrics and retry control.
+
+## 6) Compatibility Direction
+
+SDK major versions should follow protocol major compatibility.
+A compatibility matrix is maintained in docs and in `pactcore/meta`.

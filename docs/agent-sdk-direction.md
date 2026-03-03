@@ -2,40 +2,54 @@
 
 ## Why This Matters
 
-If PACT is agent-first, the SDK must optimize for autonomous loops, not only API wrappers.
+If PACT is agent-first, SDK design must optimize for autonomous operations, not only request helpers.
 
-## Proposed SDK Surfaces
+## Strategic Direction
 
-1. `client` — transport adapters (HTTP, future stream/queue)
-2. `mission` — mission lifecycle helpers and local state cache
-3. `events` — subscription cursors, replay, and checkpointing
-4. `policy` — capability envelope and guardrail middleware
-5. `evidence` — canonical evidence packaging and hash utilities
-6. `agent` — high-level runtime helpers for worker/validator agents
+### Track A — Transport Reliability
 
-## Suggested Agent Runtime API
+- hardened `PactSdk` transport client
+- retries/backoff and idempotency helpers
+- consistent error envelope parsing
+
+### Track B — Agent Runtime
+
+- worker runtime loop (implemented)
+- checkpoint store interfaces (implemented)
+- event cursor polling (implemented)
+- validator runtime and jury runtime helpers (planned)
+
+### Track C — Protocol Ergonomics
+
+- mission graph helpers
+- evidence canonicalization tools
+- policy packs for common risk profiles
+
+## Suggested Runtime Shape
 
 ```ts
 const runtime = createWorkerRuntime({
-  sdk,
+  agentId,
+  missionSource,
+  eventFeed,
+  checkpointStore,
   policy,
   handlers,
 });
 
-await runtime.subscribe();
-await runtime.claimNextMission();
-await runtime.execute();
-await runtime.submitEvidence();
+await runtime.runLoop({ iterations: 100, pollLimit: 50 });
 ```
 
 ## Design Constraints
 
-- idempotent operations for retries
-- deterministic serialization for evidence bundles
-- resilient checkpointing for long-running agents
-- explicit failure channels (recoverable vs terminal)
+- idempotent side effects
+- deterministic serialization for evidence
+- resumable processing via cursor/checkpoint
+- explicit skip/fail semantics for observability
 
-## Compatibility Contract
+## Near-Term Milestones
 
-SDK major versions should map to protocol major versions in `core`.
-A published compatibility table must be maintained in `meta`.
+1. introduce event-source adapters (SSE/queue/MCP)
+2. add validator runtime package
+3. add mission-level local cache abstraction
+4. add policy simulation harness for preflight testing

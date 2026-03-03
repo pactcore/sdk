@@ -1,43 +1,37 @@
 # PACT SDK
 
-PACT SDK is the agent-builder toolkit for the PACT ecosystem.
-It currently includes a typed TypeScript client and is evolving toward a full runtime kit for autonomous workers and validators.
+PACT SDK is the agent runtime toolkit for building on top of `pactcore/core`.
 
-## Repository Role
+This package is intentionally moving from "API wrapper" to **mission runtime framework**:
 
-PACT uses a three-repo model:
+- mission lifecycle helpers
+- event cursor processing
+- checkpoint persistence
+- policy-aware execution loops
 
-- **`core`**: protocol execution engine and invariant system
-- **`sdk`** (this repo): developer and agent runtime tooling
-- **`meta`**: standards, roadmap, and cross-repo governance
+## Design Baseline
 
-## Product Direction (Agent-First)
-
-The SDK focus is not "more endpoints".
-The focus is enabling reliable autonomous loops:
-
-- mission claim and execution
-- evidence packaging and submission
-- event replay and checkpointing
-- policy-aware tool usage
-- resilient retries with deterministic state
+- protocol truth comes from the PACT whitepaper (`core`)
+- runtime ergonomics draw from practical autonomous-agent loop patterns
+- architecture direction aligns with a Web4-style agent economy (agents as operators)
 
 ## Current Capabilities
 
-- typed `PactSdk` client
-- participant/task/ledger transport helpers
-- pluggable `fetch` transport
-- baseline tests and type-safe contracts
+- typed `PactSdk` transport client
+- `WorkerRuntime` with:
+  - `runOnce()`
+  - `runLoop()`
+  - event feed polling (cursor-based)
+  - checkpoint persistence hooks
+- policy middleware for claim/submit actions
 
-## Planned SDK Surfaces
+## Planned Surfaces
 
-- `mission` module for lifecycle helpers
-- `events` module for subscriptions and replay
-- `policy` module for capability gating
-- `evidence` module for canonical payload construction
-- `agent` runtime helpers for worker/validator roles
-
-See `docs/agent-sdk-direction.md` for detailed design direction.
+- `mission` module (local mission state cache)
+- `events` module (stream adapters: SSE/queue/MCP)
+- `policy` module (composable guardrail packs)
+- `evidence` module (canonical evidence builders + hashing)
+- `validator` runtime helpers
 
 ## Install
 
@@ -47,20 +41,22 @@ bun add @pactcore/sdk
 npm i @pactcore/sdk
 ```
 
-## Quick Start
+## Quick Example
 
 ```ts
-import { PactSdk } from "@pactcore/sdk";
+import {
+  createWorkerRuntime,
+  allowAllWorkerRuntimePolicy,
+} from "@pactcore/sdk";
 
-const sdk = new PactSdk({ baseUrl: "https://api.pact.network" });
-
-await sdk.health();
-await sdk.createTask({
-  id: "task-001",
-  issuerId: "issuer-1",
-  description: "Verify geotagged asset",
-  paymentCents: 5000,
+const runtime = createWorkerRuntime({
+  agentId: "agent-1",
+  missionSource,
+  policy: allowAllWorkerRuntimePolicy(),
+  handlers,
 });
+
+await runtime.runLoop({ iterations: 10 });
 ```
 
 ## Local Development
@@ -75,3 +71,5 @@ bun run typecheck
 
 - `docs/architecture.md`
 - `docs/agent-sdk-direction.md`
+- `docs/runtime-composition.md`
+- `docs/compatibility.md`
