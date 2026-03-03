@@ -5,6 +5,12 @@ import type {
   SubmitTaskInput,
   Task,
 } from "./types";
+import type {
+  SettlementExecutionRequest,
+  SettlementExecutionResult,
+  SettlementRecord,
+  SettlementRecordFilter,
+} from "./economics";
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -62,6 +68,38 @@ export class PactSdk {
 
   async getLedger(): Promise<unknown[]> {
     return this.request<unknown[]>("GET", "/payments/ledger");
+  }
+
+  async executeSettlement(input: SettlementExecutionRequest): Promise<SettlementExecutionResult> {
+    return this.request<SettlementExecutionResult>("POST", "/economics/settlements/execute", input);
+  }
+
+  async listSettlementRecords(filter?: SettlementRecordFilter): Promise<SettlementRecord[]> {
+    const query = new URLSearchParams();
+    if (filter?.settlementId) {
+      query.set("settlementId", filter.settlementId);
+    }
+    if (filter?.assetId) {
+      query.set("assetId", filter.assetId);
+    }
+    if (filter?.rail) {
+      query.set("rail", filter.rail);
+    }
+    if (filter?.payerId) {
+      query.set("payerId", filter.payerId);
+    }
+    if (filter?.payeeId) {
+      query.set("payeeId", filter.payeeId);
+    }
+
+    const suffix = query.toString();
+    const path =
+      suffix.length > 0 ? `/economics/settlements/records?${suffix}` : "/economics/settlements/records";
+    return this.request<SettlementRecord[]>("GET", path);
+  }
+
+  async getSettlementRecord(recordId: string): Promise<SettlementRecord> {
+    return this.request<SettlementRecord>("GET", `/economics/settlements/records/${recordId}`);
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {

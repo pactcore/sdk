@@ -4,6 +4,7 @@ import {
   summarizeCompensationByAsset,
   quoteCompensationInReference,
   buildSettlementPlan,
+  buildSettlementExecutionRequest,
 } from "../src/economics";
 
 describe("SDK economics helpers", () => {
@@ -118,5 +119,23 @@ describe("SDK economics helpers", () => {
 
     expect(plan.find((line) => line.assetId === "usdc-mainnet")?.rail).toBe("onchain_stablecoin");
     expect(plan.find((line) => line.assetId === "cloud-aws")?.rail).toBe("cloud_billing");
+  });
+
+  it("builds settlement execution request payload", () => {
+    const model = buildCompensationModel({
+      legs: [
+        {
+          payerId: "issuer-1",
+          payeeId: "agent-1",
+          assetId: "llm-gpt5",
+          amount: 42000,
+          unit: "token",
+        },
+      ],
+    });
+
+    const request = buildSettlementExecutionRequest(model, "settlement-sdk-1");
+    expect(request.settlementId).toBe("settlement-sdk-1");
+    expect(request.model.legs.length).toBe(1);
   });
 });

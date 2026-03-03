@@ -55,6 +55,42 @@ export interface SettlementLine {
   rail: "onchain_stablecoin" | "llm_metering" | "cloud_billing" | "api_quota" | "custom";
 }
 
+export interface SettlementExecutionRequest {
+  settlementId?: string;
+  model: CompensationModel;
+}
+
+export interface SettlementRecord {
+  id: string;
+  settlementId: string;
+  legId: string;
+  assetId: string;
+  rail: "llm_metering" | "cloud_billing" | "api_quota";
+  connector: "llm_token_metering" | "cloud_credit_billing" | "api_quota_allocation";
+  payerId: string;
+  payeeId: string;
+  amount: number;
+  unit: string;
+  status: "applied";
+  externalReference: string;
+  connectorMetadata?: Record<string, string>;
+  createdAt: number;
+}
+
+export interface SettlementExecutionResult {
+  settlementId: string;
+  executedAt: number;
+  records: SettlementRecord[];
+}
+
+export interface SettlementRecordFilter {
+  settlementId?: string;
+  assetId?: string;
+  rail?: SettlementRecord["rail"];
+  payerId?: string;
+  payeeId?: string;
+}
+
 export function buildCompensationModel(input: CompensationModelInput): CompensationModel {
   const mode = input.mode ?? "multi_asset";
   const legs = input.legs.map((leg, index) => ({
@@ -158,6 +194,20 @@ export function buildSettlementPlan(
         rail: settlementRailForKind(asset.kind),
       };
     });
+}
+
+export function buildSettlementExecutionRequest(
+  model: CompensationModel,
+  settlementId?: string,
+): SettlementExecutionRequest {
+  if (!model.legs.length) {
+    throw new Error("Settlement execution requires at least one compensation leg");
+  }
+
+  return {
+    model,
+    settlementId,
+  };
 }
 
 function settlementRailForKind(kind: CompensationAssetKind): SettlementLine["rail"] {
