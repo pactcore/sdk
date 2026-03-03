@@ -1,4 +1,4 @@
-export type ParticipantRole = "worker" | "validator" | "issuer" | "developer" | "buyer";
+export type ParticipantRole = "worker" | "validator" | "issuer" | "developer" | "buyer" | "agent";
 
 export interface GeoPoint {
   latitude: number;
@@ -48,4 +48,33 @@ export interface Task {
 export interface HealthResponse {
   ok: boolean;
   service?: string;
+}
+
+export type MissionStatus =
+  | "Open"
+  | "Claimed"
+  | "InProgress"
+  | "UnderReview"
+  | "Settled"
+  | "Failed";
+
+export interface AgentMission {
+  id: string;
+  title: string;
+  status: MissionStatus;
+  objective: string;
+  constraints: string[];
+  successCriteria: string[];
+}
+
+export interface MissionEvidenceInput {
+  summary: string;
+  artifactUris: string[];
+  bundleHash: string;
+}
+
+export interface WorkerRuntimeReport {
+  missionId: string;
+  outcome: "submitted" | "skipped" | "failed";
+  reason?: string;
 }
