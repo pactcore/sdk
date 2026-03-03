@@ -2,14 +2,14 @@
 
 ## Role in the Ecosystem
 
-The SDK sits between application builders and `pact-core`.
+The SDK sits between application builders and `core`.
 
 ```text
 Apps / Agents / Services
           |
-       pact-sdk
+         sdk
           |
-       pact-core API
+       core API
 ```
 
 ## Design Principles
@@ -17,7 +17,7 @@ Apps / Agents / Services
 1. **Typed by default**: expose stable TypeScript types and method contracts.
 2. **Transport-light**: rely on standard `fetch` with pluggable implementation.
 3. **Composable**: SDK should be embeddable in frontends, backends, and agents.
-4. **Protocol-aligned**: public methods mirror `pact-core` bounded contexts.
+4. **Protocol-aligned**: public methods mirror `core` bounded contexts.
 
 ## Module Plan
 
@@ -31,4 +31,4 @@ Apps / Agents / Services
 
 - SDK minor versions track additive API support
 - Breaking protocol changes must be reflected in major version bumps
-- Maintain compatibility matrix with `pact-core` versions
+- Maintain compatibility matrix with `core` versions

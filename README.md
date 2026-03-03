@@ -1,14 +1,14 @@
 # PACT SDK
 
 PACT SDK is the developer integration layer for the PACT ecosystem.
-It provides a typed TypeScript client for interacting with `pact-core` services.
+It provides a typed TypeScript client for interacting with `core` services.
 
 ## Why a Separate SDK Repository?
 
 PACT uses a two-repo strategy:
 
-- **`pact-core`**: protocol execution engine and domain invariants
-- **`pact-sdk`** (this repo): developer ergonomics, typed clients, integration helpers
+- **`core`**: protocol execution engine and domain invariants
+- **`sdk`** (this repo): developer ergonomics, typed clients, integration helpers
 
 This allows core protocol logic to remain stable while SDK experience evolves quickly.
 
