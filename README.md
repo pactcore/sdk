@@ -42,15 +42,15 @@ See `docs/agent-sdk-direction.md` for detailed design direction.
 ## Install
 
 ```bash
-bun add @pact/sdk
+bun add @pactcore/sdk
 # or
-npm i @pact/sdk
+npm i @pactcore/sdk
 ```
 
 ## Quick Start
 
 ```ts
-import { PactSdk } from "@pact/sdk";
+import { PactSdk } from "@pactcore/sdk";
 
 const sdk = new PactSdk({ baseUrl: "https://api.pact.network" });
 
