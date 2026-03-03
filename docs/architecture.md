@@ -25,8 +25,8 @@ SDK is the execution bridge between agent applications and protocol invariants.
 - `client` (implemented): transport primitives and endpoint methods
 - `worker-runtime` (implemented): runOnce/runLoop orchestration
 - `types` (implemented): mission/runtime/event/checkpoint contracts
+- `events` (implemented): `HttpMissionEventFeed` and `InMemoryMissionEventFeed`
 - `mission` (planned): local mission graph and conflict helpers
-- `events` (planned): source adapters and replay helpers
 - `policy` (planned): reusable policy packs and evaluators
 - `evidence` (planned): canonical evidence and hash utilities
 

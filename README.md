@@ -23,6 +23,11 @@ This package is intentionally moving from "API wrapper" to **mission runtime fra
   - `runLoop()`
   - event feed polling (cursor-based)
   - checkpoint persistence hooks
+- event source adapters:
+  - `HttpMissionEventFeed`
+  - `InMemoryMissionEventFeed`
+- in-memory checkpoint store:
+  - `InMemoryWorkerRuntimeCheckpointStore`
 - policy middleware for claim/submit actions
 
 ## Planned Surfaces
