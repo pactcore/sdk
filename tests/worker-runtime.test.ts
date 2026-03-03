@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { allowAllWorkerRuntimePolicy, createWorkerRuntime } from "../src/worker-runtime";
+import {
+  InMemoryWorkerRuntimeCheckpointStore,
+  allowAllWorkerRuntimePolicy,
+  createWorkerRuntime,
+} from "../src/worker-runtime";
 import type { AgentMission, MissionEvidenceInput } from "../src/types";
 
 describe("WorkerRuntime", () => {
@@ -94,5 +98,61 @@ describe("WorkerRuntime", () => {
     const result = await runtime.runOnce();
     expect(result.outcome).toBe("failed");
     expect(result.reason).toBe("policy_denied_submit");
+  });
+
+  it("runs loop with event cursor and checkpoint persistence", async () => {
+    const checkpointStore = new InMemoryWorkerRuntimeCheckpointStore();
+    let missionClaimed = false;
+
+    const runtime = createWorkerRuntime({
+      agentId: "agent-loop",
+      missionSource: {
+        claimNextMission: async () => {
+          if (missionClaimed) {
+            return undefined;
+          }
+          missionClaimed = true;
+          return {
+            id: "mission-loop-1",
+            title: "Loop Mission",
+            status: "Open",
+            objective: "do loop work",
+            constraints: [],
+            successCriteria: [],
+          };
+        },
+        submitEvidence: async () => {},
+      },
+      eventFeed: {
+        poll: async (fromCursor) =>
+          fromCursor === 0
+            ? [
+                { cursor: 0, topic: "mission.available", payload: { missionId: "m-1" } },
+                { cursor: 1, topic: "mission.updated", payload: { missionId: "m-1" } },
+              ]
+            : [],
+      },
+      checkpointStore,
+      policy: allowAllWorkerRuntimePolicy(),
+      handlers: {
+        executeMission: async () => ({
+          summary: "loop-done",
+          artifactUris: ["ipfs://loop"],
+          bundleHash: "sha256:loop",
+        }),
+      },
+    });
+
+    const report = await runtime.runLoop({ iterations: 2 });
+    expect(report.iterations).toBe(2);
+    expect(report.processedEvents).toBe(2);
+    expect(report.cursor).toBe(2);
+    expect(report.submitted).toBe(1);
+    expect(report.skipped).toBe(1);
+
+    const checkpoint = await checkpointStore.load("agent-loop");
+    expect(checkpoint?.cursor).toBe(2);
+    expect(checkpoint?.runs).toBe(2);
+    expect(checkpoint?.submitted).toBe(1);
   });
 });
