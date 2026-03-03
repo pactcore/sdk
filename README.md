@@ -26,6 +26,8 @@ This package is designed for **human-agent protocol participation**, not only en
 - economics helpers:
   - `buildCompensationModel`
   - `summarizeCompensationByAsset`
+  - `quoteCompensationInReference`
+  - `buildSettlementPlan`
 
 ## Economic Model Support
 

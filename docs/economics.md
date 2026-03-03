@@ -16,7 +16,12 @@ In PACT, mission rewards may include different asset classes:
 ## Build a Compensation Model
 
 ```ts
-import { buildCompensationModel, summarizeCompensationByAsset } from "@pactcore/sdk";
+import {
+  buildCompensationModel,
+  summarizeCompensationByAsset,
+  quoteCompensationInReference,
+  buildSettlementPlan,
+} from "@pactcore/sdk";
 
 const model = buildCompensationModel({
   mode: "multi_asset",
@@ -39,6 +44,15 @@ const model = buildCompensationModel({
 });
 
 const totals = summarizeCompensationByAsset(model);
+
+const quote = quoteCompensationInReference(model, "usdc-mainnet", [
+  { assetId: "llm-token-gpt5", referenceAssetId: "usdc-mainnet", rate: 0.0001 },
+]);
+
+const plan = buildSettlementPlan(model, [
+  { id: "usdc-mainnet", kind: "usdc" },
+  { id: "llm-token-gpt5", kind: "llm_token" },
+]);
 ```
 
 ## Validation Semantics
