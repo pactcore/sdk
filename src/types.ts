@@ -65,6 +65,16 @@ export interface AgentMission {
   objective: string;
   constraints: string[];
   successCriteria: string[];
+  compensation?: {
+    mode: "single_asset" | "multi_asset";
+    legs: Array<{
+      assetId: string;
+      amount: number;
+      unit: string;
+      payerId: string;
+      payeeId: string;
+    }>;
+  };
 }
 
 export interface MissionEvidenceInput {

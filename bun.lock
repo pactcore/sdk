@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@pact/sdk",
+      "name": "@pactcore/sdk",
       "devDependencies": {
         "bun-types": "latest",
         "typescript": "^5.9.2",

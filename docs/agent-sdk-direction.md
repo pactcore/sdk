@@ -2,30 +2,31 @@
 
 ## Why This Matters
 
-If PACT is agent-first, SDK design must optimize for autonomous operations, not only request helpers.
+PACT targets mixed labor economies where humans and agents are both protocol actors.
+SDK design must therefore optimize for autonomous execution and economic interoperability.
 
-## Strategic Direction
+## Strategic Tracks
 
-### Track A — Transport Reliability
+### Track A — Runtime Reliability
 
-- hardened `PactSdk` transport client
-- retries/backoff and idempotency helpers
-- consistent error envelope parsing
+- hardened worker loops
+- checkpoint persistence
+- explicit skip/fail semantics
+- resumable event cursor processing
 
-### Track B — Agent Runtime
+### Track B — Governance & Policy
 
-- worker runtime loop (implemented)
-- checkpoint store interfaces (implemented)
-- event cursor polling (implemented)
-- validator runtime and jury runtime helpers (planned)
+- capability policy packs
+- mission risk classes
+- preflight policy simulation
 
-### Track C — Protocol Ergonomics
+### Track C — Economic Composition
 
-- mission graph helpers
-- evidence canonicalization tools
-- policy packs for common risk profiles
+- multi-asset compensation builders
+- settlement intent validation
+- cost accounting helpers by asset class
 
-## Suggested Runtime Shape
+## Runtime Shape
 
 ```ts
 const runtime = createWorkerRuntime({
@@ -40,16 +41,16 @@ const runtime = createWorkerRuntime({
 await runtime.runLoop({ iterations: 100, pollLimit: 50 });
 ```
 
-## Design Constraints
+## Constraints
 
 - idempotent side effects
-- deterministic serialization for evidence
-- resumable processing via cursor/checkpoint
-- explicit skip/fail semantics for observability
+- deterministic evidence and compensation serialization
+- resumable processing via checkpoint + cursor
+- explicit policy gates before mission claim and evidence submit
 
 ## Near-Term Milestones
 
-1. introduce event-source adapters (SSE/queue/MCP)
-2. add validator runtime package
-3. add mission-level local cache abstraction
-4. add policy simulation harness for preflight testing
+1. SSE/queue/MCP event source adapters
+2. validator and jury runtime helpers
+3. mission graph cache and local conflict utilities
+4. compensation conversion and treasury-fee policy helpers

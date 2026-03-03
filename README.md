@@ -1,19 +1,14 @@
 # PACT SDK
 
-PACT SDK is the agent runtime toolkit for building on top of `pactcore/core`.
+PACT SDK is the runtime toolkit for building on top of `pactcore/core`.
 
-This package is intentionally moving from "API wrapper" to **mission runtime framework**:
-
-- mission lifecycle helpers
-- event cursor processing
-- checkpoint persistence
-- policy-aware execution loops
+This package is designed for **human-agent protocol participation**, not only endpoint calls.
 
 ## Design Baseline
 
-- protocol truth comes from the PACT whitepaper (`core`)
-- runtime ergonomics draw from practical autonomous-agent loop patterns
-- architecture direction aligns with a Web4-style agent economy (agents as operators)
+- protocol semantics come from the PACT whitepaper (`core`)
+- SDK focuses on loop execution, recovery, policy enforcement, and economic composition
+- transport helpers are supporting pieces, not the center
 
 ## Current Capabilities
 
@@ -28,15 +23,18 @@ This package is intentionally moving from "API wrapper" to **mission runtime fra
   - `InMemoryMissionEventFeed`
 - in-memory checkpoint store:
   - `InMemoryWorkerRuntimeCheckpointStore`
-- policy middleware for claim/submit actions
+- economics helpers:
+  - `buildCompensationModel`
+  - `summarizeCompensationByAsset`
 
-## Planned Surfaces
+## Economic Model Support
 
-- `mission` module (local mission state cache)
-- `events` module (stream adapters: SSE/queue/MCP)
-- `policy` module (composable guardrail packs)
-- `evidence` module (canonical evidence builders + hashing)
-- `validator` runtime helpers
+Compensation composition supports mixed reward legs such as:
+
+- USDC / stablecoins
+- LLM token allowances
+- cloud credits
+- API quota credits
 
 ## Install
 
@@ -52,7 +50,20 @@ npm i @pactcore/sdk
 import {
   createWorkerRuntime,
   allowAllWorkerRuntimePolicy,
+  buildCompensationModel,
 } from "@pactcore/sdk";
+
+const compensation = buildCompensationModel({
+  legs: [
+    {
+      payerId: "issuer-1",
+      payeeId: "agent-1",
+      assetId: "usdc-mainnet",
+      amount: 15,
+      unit: "USDC",
+    },
+  ],
+});
 
 const runtime = createWorkerRuntime({
   agentId: "agent-1",
@@ -78,3 +89,4 @@ bun run typecheck
 - `docs/agent-sdk-direction.md`
 - `docs/runtime-composition.md`
 - `docs/compatibility.md`
+- `docs/economics.md`

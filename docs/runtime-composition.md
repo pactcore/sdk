@@ -39,7 +39,17 @@ const report = await runtime.runLoop({ iterations: 25, pollLimit: 100 });
 - `onMissionSubmitted`: emit telemetry and internal bookkeeping
 - `onMissionFailed`: classify recoverable vs terminal errors
 
-## 5) Safety Defaults
+## 5) Economic Composition Hook
+
+Before mission submit, optionally build a compensation model:
+
+- stablecoin legs
+- LLM token legs
+- cloud/API credit legs
+
+Use SDK economics helpers to normalize totals by asset.
+
+## 6) Safety Defaults
 
 - deny unknown mission classes by policy
 - cap artifact sizes and enforce hash checks

@@ -3,32 +3,33 @@
 ## 1) Role in the Ecosystem
 
 ```text
-Apps / Agents / Services
+Apps / Humans / Agents
           |
          sdk
           |
        core protocol runtime
 ```
 
-SDK is the execution bridge between agent applications and protocol invariants.
+SDK is the execution bridge between participant runtimes and protocol invariants.
 
 ## 2) Architecture Priorities
 
-1. **Runtime-first**: autonomous loops before endpoint breadth
-2. **Typed contracts**: stable TypeScript models and interfaces
-3. **Composable transports**: HTTP now, stream/queue/MCP next
-4. **Deterministic recovery**: cursor + checkpoint semantics
-5. **Policy-aware execution**: capability gating at runtime edges
+1. runtime-first loops before endpoint breadth
+2. typed contracts for mission/event/evidence/economics
+3. deterministic recovery via cursor + checkpoint semantics
+4. policy-aware claim/submit behavior
+5. composition of multi-asset compensation intents
 
 ## 3) Module Layout
 
-- `client` (implemented): transport primitives and endpoint methods
+- `client` (implemented): HTTP transport primitives
 - `worker-runtime` (implemented): runOnce/runLoop orchestration
-- `types` (implemented): mission/runtime/event/checkpoint contracts
-- `events` (implemented): `HttpMissionEventFeed` and `InMemoryMissionEventFeed`
-- `mission` (planned): local mission graph and conflict helpers
-- `policy` (planned): reusable policy packs and evaluators
-- `evidence` (planned): canonical evidence and hash utilities
+- `event-sources` (implemented): HTTP and in-memory event feed adapters
+- `economics` (implemented): compensation model builders and summarizers
+- `types` (implemented): shared runtime contracts
+- `mission` (planned): local mission graph cache
+- `policy` (planned): reusable risk/permission policy packs
+- `evidence` (planned): canonical evidence serialization helpers
 
 ## 4) Runtime Loop Model
 
@@ -41,12 +42,12 @@ poll events -> claim mission -> execute -> build evidence -> submit -> checkpoin
 Worker runtime separates outcomes:
 
 - `submitted`
-- `skipped` (no mission or policy denial)
+- `skipped` (no mission / policy denied)
 - `failed` (execution/runtime errors)
 
-This enables deterministic operator metrics and retry control.
+This supports deterministic operations and governance metrics.
 
 ## 6) Compatibility Direction
 
 SDK major versions should follow protocol major compatibility.
-A compatibility matrix is maintained in docs and in `pactcore/meta`.
+Compatibility matrix is maintained in this repo and in `pactcore/meta`.
