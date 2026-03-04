@@ -5,9 +5,16 @@ import type {
   SubmitTaskInput,
   Task,
 } from "./types";
-import type {
+import {
+  buildSettlementAuditQueryParams,
+  buildSettlementReplayQueryParams,
+  type ReconcileSettlementRecordInput,
   SettlementExecutionRequest,
   SettlementExecutionResult,
+  SettlementRecordPage,
+  SettlementRecordPageRequest,
+  SettlementRecordReplayPage,
+  SettlementRecordReplayRequest,
   SettlementRecord,
   SettlementRecordFilter,
 } from "./economics";
@@ -75,27 +82,51 @@ export class PactSdk {
   }
 
   async listSettlementRecords(filter?: SettlementRecordFilter): Promise<SettlementRecord[]> {
-    const query = new URLSearchParams();
-    if (filter?.settlementId) {
-      query.set("settlementId", filter.settlementId);
-    }
-    if (filter?.assetId) {
-      query.set("assetId", filter.assetId);
-    }
-    if (filter?.rail) {
-      query.set("rail", filter.rail);
-    }
-    if (filter?.payerId) {
-      query.set("payerId", filter.payerId);
-    }
-    if (filter?.payeeId) {
-      query.set("payeeId", filter.payeeId);
-    }
-
-    const suffix = query.toString();
-    const path =
-      suffix.length > 0 ? `/economics/settlements/records?${suffix}` : "/economics/settlements/records";
+    const suffix = buildSettlementAuditQueryParams(filter);
+    const path = `/economics/settlements/records${suffix}`;
     return this.request<SettlementRecord[]>("GET", path);
+  }
+
+  async querySettlementAuditRecords(
+    filter?: SettlementRecordFilter,
+    page?: SettlementRecordPageRequest,
+  ): Promise<SettlementRecordPage> {
+    const suffix = buildSettlementAuditQueryParams(filter, page);
+    return this.request<SettlementRecordPage>("GET", `/economics/settlements/records/page${suffix}`);
+  }
+
+  async querySettlementReconciliationRecords(
+    filter?: Omit<SettlementRecordFilter, "status"> & { status?: SettlementRecord["status"] },
+    page?: SettlementRecordPageRequest,
+  ): Promise<SettlementRecordPage> {
+    return this.querySettlementAuditRecords(
+      {
+        ...filter,
+        status: filter?.status ?? "reconciled",
+      },
+      page,
+    );
+  }
+
+  async replaySettlementRecordLifecycle(
+    input?: SettlementRecordReplayRequest,
+  ): Promise<SettlementRecordReplayPage> {
+    const suffix = buildSettlementReplayQueryParams(input);
+    return this.request<SettlementRecordReplayPage>(
+      "GET",
+      `/economics/settlements/records/replay${suffix}`,
+    );
+  }
+
+  async reconcileSettlementRecord(
+    recordId: string,
+    input?: ReconcileSettlementRecordInput,
+  ): Promise<SettlementRecord> {
+    return this.request<SettlementRecord>(
+      "POST",
+      `/economics/settlements/records/${recordId}/reconcile`,
+      input ?? {},
+    );
   }
 
   async getSettlementRecord(recordId: string): Promise<SettlementRecord> {

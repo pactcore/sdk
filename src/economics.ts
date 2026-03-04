@@ -71,10 +71,13 @@ export interface SettlementRecord {
   payeeId: string;
   amount: number;
   unit: string;
-  status: "applied";
+  status: "applied" | "reconciled";
   externalReference: string;
   connectorMetadata?: Record<string, string>;
   createdAt: number;
+  reconciledAt?: number;
+  reconciledBy?: string;
+  reconciliationNote?: string;
 }
 
 export interface SettlementExecutionResult {
@@ -89,6 +92,46 @@ export interface SettlementRecordFilter {
   rail?: SettlementRecord["rail"];
   payerId?: string;
   payeeId?: string;
+  status?: SettlementRecord["status"];
+  reconciledBy?: string;
+}
+
+export interface SettlementRecordPageRequest {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface SettlementRecordPage {
+  items: SettlementRecord[];
+  nextCursor?: string;
+}
+
+export type SettlementRecordLifecycleAction = "created" | "reconciled";
+
+export interface SettlementRecordLifecycleEntry {
+  offset: number;
+  action: SettlementRecordLifecycleAction;
+  recordId: string;
+  settlementId: string;
+  status: SettlementRecord["status"];
+  occurredAt: number;
+  record: SettlementRecord;
+}
+
+export interface SettlementRecordReplayRequest {
+  fromOffset?: number;
+  limit?: number;
+}
+
+export interface SettlementRecordReplayPage {
+  entries: SettlementRecordLifecycleEntry[];
+  nextOffset?: number;
+}
+
+export interface ReconcileSettlementRecordInput {
+  reconciledBy?: string;
+  note?: string;
+  reconciledAt?: number;
 }
 
 export function buildCompensationModel(input: CompensationModelInput): CompensationModel {
@@ -208,6 +251,56 @@ export function buildSettlementExecutionRequest(
     model,
     settlementId,
   };
+}
+
+export function buildSettlementAuditQueryParams(
+  filter: SettlementRecordFilter = {},
+  page: SettlementRecordPageRequest = {},
+): string {
+  const query = new URLSearchParams();
+  if (filter.settlementId) {
+    query.set("settlementId", filter.settlementId);
+  }
+  if (filter.assetId) {
+    query.set("assetId", filter.assetId);
+  }
+  if (filter.rail) {
+    query.set("rail", filter.rail);
+  }
+  if (filter.payerId) {
+    query.set("payerId", filter.payerId);
+  }
+  if (filter.payeeId) {
+    query.set("payeeId", filter.payeeId);
+  }
+  if (filter.status) {
+    query.set("status", filter.status);
+  }
+  if (filter.reconciledBy) {
+    query.set("reconciledBy", filter.reconciledBy);
+  }
+  if (page.cursor) {
+    query.set("cursor", page.cursor);
+  }
+  if (page.limit !== undefined) {
+    query.set("limit", String(page.limit));
+  }
+
+  const suffix = query.toString();
+  return suffix.length > 0 ? `?${suffix}` : "";
+}
+
+export function buildSettlementReplayQueryParams(input: SettlementRecordReplayRequest = {}): string {
+  const query = new URLSearchParams();
+  if (input.fromOffset !== undefined) {
+    query.set("fromOffset", String(input.fromOffset));
+  }
+  if (input.limit !== undefined) {
+    query.set("limit", String(input.limit));
+  }
+
+  const suffix = query.toString();
+  return suffix.length > 0 ? `?${suffix}` : "";
 }
 
 function settlementRailForKind(kind: CompensationAssetKind): SettlementLine["rail"] {

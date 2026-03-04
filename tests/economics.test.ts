@@ -5,6 +5,8 @@ import {
   quoteCompensationInReference,
   buildSettlementPlan,
   buildSettlementExecutionRequest,
+  buildSettlementAuditQueryParams,
+  buildSettlementReplayQueryParams,
 } from "../src/economics";
 
 describe("SDK economics helpers", () => {
@@ -137,5 +139,26 @@ describe("SDK economics helpers", () => {
     const request = buildSettlementExecutionRequest(model, "settlement-sdk-1");
     expect(request.settlementId).toBe("settlement-sdk-1");
     expect(request.model.legs.length).toBe(1);
+  });
+
+  it("builds settlement audit query params with filters and pagination", () => {
+    const query = buildSettlementAuditQueryParams(
+      {
+        settlementId: "settlement-1",
+        rail: "llm_metering",
+        status: "reconciled",
+        reconciledBy: "auditor-1",
+      },
+      { cursor: "2", limit: 10 },
+    );
+
+    expect(query).toBe(
+      "?settlementId=settlement-1&rail=llm_metering&status=reconciled&reconciledBy=auditor-1&cursor=2&limit=10",
+    );
+  });
+
+  it("builds settlement replay query params", () => {
+    const query = buildSettlementReplayQueryParams({ fromOffset: 3, limit: 20 });
+    expect(query).toBe("?fromOffset=3&limit=20");
   });
 });
