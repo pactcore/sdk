@@ -1,29 +1,75 @@
 import type {
-  CreateTaskInput,
-  HealthResponse,
-  RegisterParticipantInput,
-  SubmitTaskInput,
-  Task,
+  AddMicropaymentInput,
+  ApiKeyInfo,
+  CapabilityCheckResult,
+  ComputeJobInput,
+  ComputeJobResult,
+  ComputePricingQuote,
+  ComputePricingQuoteInput,
   ComputeProvider,
   ComputeUsageRecord,
-  ComputeJobResult,
-  ComputeJobInput,
+  CreateApiKeyInput,
+  CreateDataListingInput,
+  CreateTaskInput,
+  CreateZKCompletionProofInput,
+  CreateZKIdentityProofInput,
+  CreateZKLocationProofInput,
+  CreateZKReputationProofInput,
+  CreditLine,
   DIDDocument,
-  VerifiableCredential,
-  IssueCredentialInput,
-  CapabilityCheckResult,
-  DataAsset,
-  PublishDataAssetInput,
-  ProvenanceEdge,
-  IntegrityProof,
-  DataAccessPolicy,
   DataAccessCheckResult,
+  DataAccessPolicy,
+  DataAsset,
+  DataCategory,
+  DataListing,
+  DataMarketplaceStats,
+  DataPurchase,
   DevIntegration,
-  RegisterDevIntegrationInput,
-  PolicyPackage,
+  GasSponsorshipGrant,
+  GrantGasSponsorshipInput,
+  HealthResponse,
+  IntegrityProof,
+  IssueCredentialInput,
+  MetricsSnapshot,
+  MicropaymentAcceptedResponse,
+  MicropaymentBatch,
+  ObservabilityHealthResponse,
+  ObservabilityTracesResponse,
+  OnchainParticipantIdentity,
+  OpenCreditLineInput,
+  OverallUsageStats,
+  Participant,
+  ParticipantLevelResponse,
+  ParticipantLevelUpgradeResult,
+  ParticipantStats,
+  PaymentRoute,
+  PluginInstall,
+  PluginListingView,
   PolicyEvaluationResult,
-  SDKTemplate,
+  PolicyPackage,
+  ProvenanceEdge,
+  PublishDataAssetInput,
+  PublishPluginInput,
+  PurchaseDataListingInput,
+  RecordReputationEventInput,
+  RegisterDevIntegrationInput,
+  RegisterParticipantInput,
   RegisterSDKTemplateInput,
+  RegisteredApiKey,
+  ReputationCategory,
+  ReputationEvent,
+  ReputationProfile,
+  ResourceTier,
+  RevenueShare,
+  RoutePaymentInput,
+  SDKTemplate,
+  SubmitTaskInput,
+  Task,
+  UsageStats,
+  VerifiableCredential,
+  WorkerProfile,
+  ZKProof,
+  ZKProofVerificationResult,
 } from "./types";
 import {
   buildSettlementAuditQueryParams,
@@ -31,12 +77,12 @@ import {
   type ReconcileSettlementRecordInput,
   SettlementExecutionRequest,
   SettlementExecutionResult,
+  SettlementRecord,
+  SettlementRecordFilter,
   SettlementRecordPage,
   SettlementRecordPageRequest,
   SettlementRecordReplayPage,
   SettlementRecordReplayRequest,
-  SettlementRecord,
-  SettlementRecordFilter,
 } from "./economics";
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -65,24 +111,210 @@ export class PactSdk {
     return this.request<HealthResponse>("GET", "/health");
   }
 
-  async registerParticipant(input: RegisterParticipantInput): Promise<unknown> {
-    return this.request("POST", "/id/participants", input);
+  // ── Observability & admin ─────────────────────────────────────
+
+  async getObservabilityHealth(): Promise<ObservabilityHealthResponse> {
+    return this.request<ObservabilityHealthResponse>("GET", "/observability/health");
   }
 
-  async listWorkers(): Promise<unknown[]> {
-    return this.request<unknown[]>("GET", "/id/workers");
+  async getObservabilityMetrics(): Promise<MetricsSnapshot> {
+    return this.request<MetricsSnapshot>("GET", "/observability/metrics");
   }
+
+  async getObservabilityTraces(limit?: number): Promise<ObservabilityTracesResponse> {
+    const suffix = limit !== undefined ? `?limit=${encodeURIComponent(String(limit))}` : "";
+    return this.request<ObservabilityTracesResponse>("GET", `/observability/traces${suffix}`);
+  }
+
+  async createApiKey(input: CreateApiKeyInput): Promise<RegisteredApiKey> {
+    return this.request<RegisteredApiKey>("POST", "/admin/api-keys", input);
+  }
+
+  async listApiKeys(ownerId: string): Promise<ApiKeyInfo[]> {
+    const query = `?ownerId=${encodeURIComponent(ownerId)}`;
+    return this.request<ApiKeyInfo[]>("GET", `/admin/api-keys${query}`);
+  }
+
+  async revokeApiKey(apiKeyId: string): Promise<void> {
+    await this.request("DELETE", `/admin/api-keys/${encodeURIComponent(apiKeyId)}`);
+  }
+
+  async getUsageStats(apiKeyId: string): Promise<UsageStats> {
+    const query = `?apiKeyId=${encodeURIComponent(apiKeyId)}`;
+    return this.request<UsageStats>("GET", `/admin/usage${query}`);
+  }
+
+  async getOverallUsageStats(): Promise<OverallUsageStats> {
+    return this.request<OverallUsageStats>("GET", "/admin/usage/overall");
+  }
+
+  // ── Reputation ────────────────────────────────────────────────
+
+  async listReputationLeaderboard(
+    category?: ReputationCategory,
+    limit?: number,
+  ): Promise<ReputationProfile[]> {
+    const params = new URLSearchParams();
+    if (category) {
+      params.set("category", category);
+    }
+    if (limit !== undefined) {
+      params.set("limit", String(limit));
+    }
+    const query = params.toString();
+    const suffix = query ? `?${query}` : "";
+    return this.request<ReputationProfile[]>("GET", `/reputation/leaderboard${suffix}`);
+  }
+
+  async getReputation(participantId: string): Promise<ReputationProfile> {
+    return this.request<ReputationProfile>(
+      "GET",
+      `/reputation/${encodeURIComponent(participantId)}`,
+    );
+  }
+
+  async recordReputationEvent(
+    participantId: string,
+    input: RecordReputationEventInput,
+  ): Promise<ReputationProfile> {
+    return this.request<ReputationProfile>(
+      "POST",
+      `/reputation/${encodeURIComponent(participantId)}/events`,
+      input,
+    );
+  }
+
+  async getReputationHistory(participantId: string, limit?: number): Promise<ReputationEvent[]> {
+    const suffix = limit !== undefined ? `?limit=${encodeURIComponent(String(limit))}` : "";
+    return this.request<ReputationEvent[]>(
+      "GET",
+      `/reputation/${encodeURIComponent(participantId)}/history${suffix}`,
+    );
+  }
+
+  // ── PactID / DID ──────────────────────────────────────────────
+
+  async registerParticipant(input: RegisterParticipantInput): Promise<Participant> {
+    return this.request<Participant>("POST", "/id/participants", input);
+  }
+
+  async listWorkers(): Promise<WorkerProfile[]> {
+    return this.request<WorkerProfile[]>("GET", "/id/workers");
+  }
+
+  async getDIDDocument(participantId: string): Promise<DIDDocument> {
+    return this.request<DIDDocument>("GET", `/id/did/${encodeURIComponent(participantId)}`);
+  }
+
+  async getOnchainIdentity(participantId: string): Promise<OnchainParticipantIdentity | null> {
+    return this.request<OnchainParticipantIdentity | null>(
+      "GET",
+      `/id/onchain/${encodeURIComponent(participantId)}`,
+    );
+  }
+
+  async syncOnchainIdentity(participantId: string): Promise<OnchainParticipantIdentity | null> {
+    return this.request<OnchainParticipantIdentity | null>(
+      "POST",
+      `/id/onchain/${encodeURIComponent(participantId)}/sync`,
+      {},
+    );
+  }
+
+  async getParticipantLevel(participantId: string): Promise<ParticipantLevelResponse> {
+    return this.request<ParticipantLevelResponse>(
+      "GET",
+      `/id/participants/${encodeURIComponent(participantId)}/level`,
+    );
+  }
+
+  async upgradeParticipantLevel(participantId: string): Promise<ParticipantLevelUpgradeResult> {
+    return this.request<ParticipantLevelUpgradeResult>(
+      "POST",
+      `/id/participants/${encodeURIComponent(participantId)}/upgrade-level`,
+      {},
+    );
+  }
+
+  async getParticipantStats(participantId: string): Promise<ParticipantStats> {
+    return this.request<ParticipantStats>(
+      "GET",
+      `/id/participants/${encodeURIComponent(participantId)}/stats`,
+    );
+  }
+
+  async recordParticipantTaskCompleted(participantId: string): Promise<ParticipantStats> {
+    return this.request<ParticipantStats>(
+      "POST",
+      `/id/participants/${encodeURIComponent(participantId)}/task-completed`,
+      {},
+    );
+  }
+
+  async issueCredential(input: IssueCredentialInput): Promise<VerifiableCredential> {
+    return this.request<VerifiableCredential>("POST", "/id/credentials", input);
+  }
+
+  async verifyCredential(credential: VerifiableCredential): Promise<{ valid: boolean }> {
+    return this.request<{ valid: boolean }>("POST", "/id/credentials/verify", credential);
+  }
+
+  async checkCapability(
+    participantId: string,
+    capability: string,
+  ): Promise<CapabilityCheckResult> {
+    return this.request<CapabilityCheckResult>(
+      "GET",
+      `/id/capabilities/${encodeURIComponent(participantId)}/${encodeURIComponent(capability)}`,
+    );
+  }
+
+  // ── ZK proofs ────────────────────────────────────────────────
+
+  async createZKLocationProof(input: CreateZKLocationProofInput): Promise<ZKProof> {
+    return this.request<ZKProof>("POST", "/zk/proofs/location", input);
+  }
+
+  async createZKCompletionProof(input: CreateZKCompletionProofInput): Promise<ZKProof> {
+    return this.request<ZKProof>("POST", "/zk/proofs/completion", input);
+  }
+
+  async createZKIdentityProof(input: CreateZKIdentityProofInput): Promise<ZKProof> {
+    return this.request<ZKProof>("POST", "/zk/proofs/identity", input);
+  }
+
+  async createZKReputationProof(input: CreateZKReputationProofInput): Promise<ZKProof> {
+    return this.request<ZKProof>("POST", "/zk/proofs/reputation", input);
+  }
+
+  async verifyZKProof(proofId: string): Promise<ZKProofVerificationResult> {
+    return this.request<ZKProofVerificationResult>(
+      "POST",
+      `/zk/proofs/${encodeURIComponent(proofId)}/verify`,
+      {},
+    );
+  }
+
+  async getZKProof(proofId: string): Promise<ZKProof | null> {
+    return this.request<ZKProof | null>("GET", `/zk/proofs/${encodeURIComponent(proofId)}`);
+  }
+
+  // ── Tasks ────────────────────────────────────────────────────
 
   async createTask(input: CreateTaskInput): Promise<Task> {
     return this.request<Task>("POST", "/tasks", input);
   }
 
   async assignTask(taskId: string, workerId?: string): Promise<Task> {
-    return this.request<Task>("POST", `/tasks/${taskId}/assign`, workerId ? { workerId } : {});
+    return this.request<Task>(
+      "POST",
+      `/tasks/${encodeURIComponent(taskId)}/assign`,
+      workerId ? { workerId } : {},
+    );
   }
 
   async submitTask(taskId: string, input: SubmitTaskInput): Promise<Task> {
-    return this.request<Task>("POST", `/tasks/${taskId}/submit`, input);
+    return this.request<Task>("POST", `/tasks/${encodeURIComponent(taskId)}/submit`, input);
   }
 
   async listTasks(): Promise<Task[]> {
@@ -90,12 +322,70 @@ export class PactSdk {
   }
 
   async getTask(taskId: string): Promise<Task> {
-    return this.request<Task>("GET", `/tasks/${taskId}`);
+    return this.request<Task>("GET", `/tasks/${encodeURIComponent(taskId)}`);
+  }
+
+  // ── Payment routing ──────────────────────────────────────────
+
+  async routePayment(input: RoutePaymentInput): Promise<PaymentRoute> {
+    return this.request<PaymentRoute>("POST", "/pay/route", {
+      fromId: input.fromId,
+      toId: input.toId,
+      amount: input.amount,
+      currency: input.currency,
+      reference: input.reference,
+    });
+  }
+
+  async listPaymentRoutes(): Promise<PaymentRoute[]> {
+    return this.request<PaymentRoute[]>("GET", "/pay/routes");
+  }
+
+  async addMicropayment(input: AddMicropaymentInput): Promise<MicropaymentAcceptedResponse> {
+    return this.request<MicropaymentAcceptedResponse>("POST", "/pay/micropayments", input);
+  }
+
+  async flushMicropayments(payerId: string): Promise<MicropaymentBatch> {
+    return this.request<MicropaymentBatch>("POST", "/pay/micropayments/flush", { payerId });
+  }
+
+  async openCreditLine(input: OpenCreditLineInput): Promise<CreditLine> {
+    return this.request<CreditLine>("POST", "/pay/credit-lines", input);
+  }
+
+  async useCreditLine(creditLineId: string, amountCents: number): Promise<CreditLine> {
+    return this.request<CreditLine>(
+      "POST",
+      `/pay/credit-lines/${encodeURIComponent(creditLineId)}/use`,
+      { amountCents },
+    );
+  }
+
+  async repayCreditLine(creditLineId: string, amountCents: number): Promise<CreditLine> {
+    return this.request<CreditLine>(
+      "POST",
+      `/pay/credit-lines/${encodeURIComponent(creditLineId)}/repay`,
+      { amountCents },
+    );
+  }
+
+  async grantGasSponsorship(input: GrantGasSponsorshipInput): Promise<GasSponsorshipGrant> {
+    return this.request<GasSponsorshipGrant>("POST", "/pay/gas-sponsorship", input);
+  }
+
+  async useGasSponsorship(grantId: string, gasCents: number): Promise<GasSponsorshipGrant> {
+    return this.request<GasSponsorshipGrant>(
+      "POST",
+      `/pay/gas-sponsorship/${encodeURIComponent(grantId)}/use`,
+      { gasCents },
+    );
   }
 
   async getLedger(): Promise<unknown[]> {
     return this.request<unknown[]>("GET", "/payments/ledger");
   }
+
+  // ── Settlements (economics) ─────────────────────────────────
 
   async executeSettlement(input: SettlementExecutionRequest): Promise<SettlementExecutionResult> {
     return this.request<SettlementExecutionResult>("POST", "/economics/settlements/execute", input);
@@ -144,16 +434,19 @@ export class PactSdk {
   ): Promise<SettlementRecord> {
     return this.request<SettlementRecord>(
       "POST",
-      `/economics/settlements/records/${recordId}/reconcile`,
+      `/economics/settlements/records/${encodeURIComponent(recordId)}/reconcile`,
       input ?? {},
     );
   }
 
   async getSettlementRecord(recordId: string): Promise<SettlementRecord> {
-    return this.request<SettlementRecord>("GET", `/economics/settlements/records/${recordId}`);
+    return this.request<SettlementRecord>(
+      "GET",
+      `/economics/settlements/records/${encodeURIComponent(recordId)}`,
+    );
   }
 
-  // ── PactCompute ────────────────────────────────────────────
+  // ── PactCompute ─────────────────────────────────────────────
 
   async registerComputeProvider(provider: ComputeProvider): Promise<void> {
     await this.request("POST", "/compute/providers", provider);
@@ -172,8 +465,21 @@ export class PactSdk {
       minCpu: String(minCpu),
       minMemory: String(minMemory),
     });
-    if (minGpu !== undefined) params.set("minGpu", String(minGpu));
+    if (minGpu !== undefined) {
+      params.set("minGpu", String(minGpu));
+    }
     return this.request<ComputeProvider[]>("GET", `/compute/providers/search?${params}`);
+  }
+
+  async listComputePricingTiers(): Promise<ResourceTier[]> {
+    return this.request<ResourceTier[]>("GET", "/compute/pricing/tiers");
+  }
+
+  async quoteComputePricing(input: ComputePricingQuoteInput): Promise<ComputePricingQuote> {
+    return this.request<ComputePricingQuote>("POST", "/compute/pricing/quote", {
+      capabilities: input.capabilities,
+      durationSeconds: input.durationSeconds,
+    });
   }
 
   async enqueueComputeJob(input: ComputeJobInput): Promise<{ id: string }> {
@@ -183,7 +489,7 @@ export class PactSdk {
   async dispatchComputeJob(jobId: string, providerId?: string): Promise<ComputeJobResult> {
     return this.request<ComputeJobResult>(
       "POST",
-      `/compute/jobs/${jobId}/dispatch`,
+      `/compute/jobs/${encodeURIComponent(jobId)}/dispatch`,
       providerId ? { providerId } : {},
     );
   }
@@ -193,31 +499,7 @@ export class PactSdk {
     return this.request<ComputeUsageRecord[]>("GET", `/compute/usage${suffix}`);
   }
 
-  // ── PactID / DID ───────────────────────────────────────────
-
-  async getDIDDocument(participantId: string): Promise<DIDDocument> {
-    return this.request<DIDDocument>("GET", `/id/did/${participantId}`);
-  }
-
-  async issueCredential(input: IssueCredentialInput): Promise<VerifiableCredential> {
-    return this.request<VerifiableCredential>("POST", "/id/credentials", input);
-  }
-
-  async verifyCredential(credential: VerifiableCredential): Promise<{ valid: boolean }> {
-    return this.request<{ valid: boolean }>("POST", "/id/credentials/verify", credential);
-  }
-
-  async checkCapability(
-    participantId: string,
-    capability: string,
-  ): Promise<CapabilityCheckResult> {
-    return this.request<CapabilityCheckResult>(
-      "GET",
-      `/id/capabilities/${participantId}/${encodeURIComponent(capability)}`,
-    );
-  }
-
-  // ── PactData ───────────────────────────────────────────────
+  // ── PactData ────────────────────────────────────────────────
 
   async publishDataAsset(input: PublishDataAssetInput): Promise<DataAsset> {
     return this.request<DataAsset>("POST", "/data/assets", input);
@@ -228,31 +510,28 @@ export class PactSdk {
   }
 
   async getDataAssetLineage(assetId: string): Promise<ProvenanceEdge[]> {
-    return this.request<ProvenanceEdge[]>("GET", `/data/assets/${assetId}/lineage`);
+    return this.request<ProvenanceEdge[]>("GET", `/data/assets/${encodeURIComponent(assetId)}/lineage`);
   }
 
   async getDataAssetDependents(assetId: string): Promise<ProvenanceEdge[]> {
-    return this.request<ProvenanceEdge[]>("GET", `/data/assets/${assetId}/dependents`);
+    return this.request<ProvenanceEdge[]>(
+      "GET",
+      `/data/assets/${encodeURIComponent(assetId)}/dependents`,
+    );
   }
 
-  async registerIntegrityProof(
-    assetId: string,
-    contentHash: string,
-  ): Promise<IntegrityProof> {
+  async registerIntegrityProof(assetId: string, contentHash: string): Promise<IntegrityProof> {
     return this.request<IntegrityProof>(
       "POST",
-      `/data/assets/${assetId}/integrity`,
+      `/data/assets/${encodeURIComponent(assetId)}/integrity`,
       { contentHash },
     );
   }
 
-  async verifyDataIntegrity(
-    assetId: string,
-    contentHash: string,
-  ): Promise<{ valid: boolean }> {
+  async verifyDataIntegrity(assetId: string, contentHash: string): Promise<{ valid: boolean }> {
     return this.request<{ valid: boolean }>(
       "POST",
-      `/data/assets/${assetId}/integrity/verify`,
+      `/data/assets/${encodeURIComponent(assetId)}/integrity/verify`,
       { contentHash },
     );
   }
@@ -264,22 +543,71 @@ export class PactSdk {
   ): Promise<DataAccessPolicy> {
     return this.request<DataAccessPolicy>(
       "PUT",
-      `/data/assets/${assetId}/access`,
+      `/data/assets/${encodeURIComponent(assetId)}/access`,
       { allowedParticipantIds, isPublic },
     );
   }
 
-  async checkDataAccess(
-    assetId: string,
-    participantId: string,
-  ): Promise<DataAccessCheckResult> {
+  async checkDataAccess(assetId: string, participantId: string): Promise<DataAccessCheckResult> {
     return this.request<DataAccessCheckResult>(
       "GET",
-      `/data/assets/${assetId}/access/${participantId}`,
+      `/data/assets/${encodeURIComponent(assetId)}/access/${encodeURIComponent(participantId)}`,
     );
   }
 
-  // ── PactDev ────────────────────────────────────────────────
+  async createDataListing(input: CreateDataListingInput): Promise<DataListing> {
+    return this.request<DataListing>("POST", "/data/marketplace/list", input);
+  }
+
+  async delistDataListing(listingId: string): Promise<void> {
+    await this.request("DELETE", `/data/marketplace/listings/${encodeURIComponent(listingId)}`);
+  }
+
+  async listDataListings(category?: DataCategory): Promise<DataListing[]> {
+    const suffix = category ? `?category=${encodeURIComponent(category)}` : "";
+    return this.request<DataListing[]>("GET", `/data/marketplace/listings${suffix}`);
+  }
+
+  async purchaseDataListing(input: PurchaseDataListingInput): Promise<DataPurchase> {
+    return this.request<DataPurchase>("POST", "/data/marketplace/purchase", input);
+  }
+
+  async getDataMarketplaceStats(): Promise<DataMarketplaceStats> {
+    return this.request<DataMarketplaceStats>("GET", "/data/marketplace/stats");
+  }
+
+  // ── PactDev ─────────────────────────────────────────────────
+
+  async publishPlugin(input: PublishPluginInput): Promise<PluginListingView> {
+    return this.request<PluginListingView>("POST", "/dev/plugins/publish", input);
+  }
+
+  async listPlugins(): Promise<PluginListingView[]> {
+    return this.request<PluginListingView[]>("GET", "/dev/plugins");
+  }
+
+  async installPlugin(pluginId: string, installerId: string): Promise<PluginInstall> {
+    return this.request<PluginInstall>(
+      "POST",
+      `/dev/plugins/${encodeURIComponent(pluginId)}/install`,
+      { installerId },
+    );
+  }
+
+  async recordPluginRevenue(pluginId: string, revenueCents: number): Promise<RevenueShare> {
+    return this.request<RevenueShare>(
+      "POST",
+      `/dev/plugins/${encodeURIComponent(pluginId)}/revenue`,
+      { revenueCents },
+    );
+  }
+
+  async getDeveloperPluginPayouts(developerId: string): Promise<RevenueShare[]> {
+    return this.request<RevenueShare[]>(
+      "GET",
+      `/dev/plugins/payouts/${encodeURIComponent(developerId)}`,
+    );
+  }
 
   async registerDevIntegration(input: RegisterDevIntegrationInput): Promise<DevIntegration> {
     return this.request<DevIntegration>("POST", "/dev/integrations", input);
@@ -290,15 +618,15 @@ export class PactSdk {
   }
 
   async activateIntegration(id: string): Promise<DevIntegration> {
-    return this.request<DevIntegration>("POST", `/dev/integrations/${id}/activate`);
+    return this.request<DevIntegration>("POST", `/dev/integrations/${encodeURIComponent(id)}/activate`);
   }
 
   async suspendIntegration(id: string): Promise<DevIntegration> {
-    return this.request<DevIntegration>("POST", `/dev/integrations/${id}/suspend`);
+    return this.request<DevIntegration>("POST", `/dev/integrations/${encodeURIComponent(id)}/suspend`);
   }
 
   async deprecateIntegration(id: string): Promise<DevIntegration> {
-    return this.request<DevIntegration>("POST", `/dev/integrations/${id}/deprecate`);
+    return this.request<DevIntegration>("POST", `/dev/integrations/${encodeURIComponent(id)}/deprecate`);
   }
 
   async registerPolicy(pkg: PolicyPackage): Promise<void> {
