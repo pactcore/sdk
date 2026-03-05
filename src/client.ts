@@ -71,6 +71,8 @@ import type {
   OpenMissionChallengeInput,
   OverallUsageStats,
   Participant,
+  ParticipantMatrixCategoryInput,
+  ParticipantMatrixCategoryResponse,
   ParticipantLevelResponse,
   ParticipantLevelUpgradeResult,
   ParticipantStats,
@@ -96,6 +98,10 @@ import type {
   ReputationCategory,
   ReputationEvent,
   ReputationProfile,
+  RoleActionCheckInput,
+  RoleActionCheckResponse,
+  RoleCapabilitiesResponse,
+  RoleRequirementsResponse,
   ResolveMissionChallengeInput,
   ResourceTier,
   RevenueShare,
@@ -113,6 +119,12 @@ import type {
   Task,
   TaskAnalytics,
   ThreatEntry,
+  TokenApyInput,
+  TokenApyReport,
+  TokenBurnRateInput,
+  TokenBurnRateReport,
+  TokenDistributionReport,
+  TokenSupplyReport,
   UsageStats,
   VerifiableCredential,
   WorkerProfile,
@@ -280,6 +292,36 @@ export class PactSdk {
     return this.request<SybilResistanceAssessment>(
       "GET",
       `/security/sybil-resistance/${encodeURIComponent(participantId)}`,
+    );
+  }
+
+  // ── Role/participant matrix ──────────────────────────────────
+
+  async getRoleCapabilities(role: string): Promise<RoleCapabilitiesResponse> {
+    return this.request<RoleCapabilitiesResponse>(
+      "GET",
+      `/roles/${encodeURIComponent(role)}/capabilities`,
+    );
+  }
+
+  async getRoleRequirements(role: string): Promise<RoleRequirementsResponse> {
+    return this.request<RoleRequirementsResponse>(
+      "GET",
+      `/roles/${encodeURIComponent(role)}/requirements`,
+    );
+  }
+
+  async checkRoleAction(input: RoleActionCheckInput): Promise<RoleActionCheckResponse> {
+    return this.request<RoleActionCheckResponse>("POST", "/roles/check-action", input);
+  }
+
+  async getParticipantMatrixCategory(
+    input: ParticipantMatrixCategoryInput,
+  ): Promise<ParticipantMatrixCategoryResponse> {
+    return this.request<ParticipantMatrixCategoryResponse>(
+      "POST",
+      "/participants/matrix/category",
+      input,
     );
   }
 
@@ -622,6 +664,25 @@ export class PactSdk {
 
   async getLedger(): Promise<unknown[]> {
     return this.request<unknown[]>("GET", "/payments/ledger");
+  }
+
+  // ── Token economics ───────────────────────────────────────────
+
+  async getTokenDistribution(): Promise<TokenDistributionReport> {
+    return this.request<TokenDistributionReport>("GET", "/economics/token/distribution");
+  }
+
+  async getTokenSupply(months?: number): Promise<TokenSupplyReport> {
+    const suffix = months !== undefined ? `?months=${encodeURIComponent(String(months))}` : "";
+    return this.request<TokenSupplyReport>("GET", `/economics/token/supply${suffix}`);
+  }
+
+  async calculateTokenApy(input: TokenApyInput): Promise<TokenApyReport> {
+    return this.request<TokenApyReport>("POST", "/economics/token/apy", input);
+  }
+
+  async calculateTokenBurnRate(input: TokenBurnRateInput): Promise<TokenBurnRateReport> {
+    return this.request<TokenBurnRateReport>("POST", "/economics/token/burn-rate", input);
   }
 
   async registerEconomicsAsset(input: RegisterEconomicsAssetInput): Promise<EconomicsAsset> {

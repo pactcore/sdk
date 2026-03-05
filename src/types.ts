@@ -1468,6 +1468,162 @@ export interface SettlementPlan {
   lines: SettlementPlanLine[];
 }
 
+// ── Batch 8: Token economics route types ───────────────────────
+
+export type TokenEconomicsApplication =
+  | "tasks"
+  | "pay"
+  | "id"
+  | "data"
+  | "compute"
+  | "dev"
+  | "ecosystem";
+
+export interface PactTokenInfo {
+  name: string;
+  symbol: string;
+  decimals: number;
+  totalSupply: number;
+  launchTimestamp: number;
+}
+
+export interface TokenDistributionEntry {
+  application: TokenEconomicsApplication;
+  allocationPercent: number;
+  allocationAmount: number;
+  initialUnlockPercent: number;
+  description?: string;
+}
+
+export interface TokenSupplyProjection {
+  month: number;
+  timestamp: number;
+  circulatingSupply: number;
+  lockedSupply: number;
+  totalSupply: number;
+}
+
+export interface TokenDistributionReport {
+  token: PactTokenInfo;
+  distribution: TokenDistributionEntry[];
+  totalAllocated: number;
+}
+
+export interface TokenSupplyReport {
+  token: PactTokenInfo;
+  asOf: number;
+  months: number;
+  circulatingSupply: number;
+  projections: TokenSupplyProjection[];
+}
+
+export interface TokenApyInput {
+  totalStaked: number;
+  emissionRate: number;
+}
+
+export interface TokenApyReport {
+  totalStaked: number;
+  emissionRate: number;
+  apy: number;
+}
+
+export interface TokenBurnRateInput {
+  transactionVolume: number;
+  burnPercent: number;
+}
+
+export interface TokenBurnRateReport {
+  transactionVolume: number;
+  burnPercent: number;
+  burnedAmount: number;
+  netVolume: number;
+}
+
+// ── Batch 8: Role/participant matrix route types ───────────────
+
+export type RoleMatrixParticipantRole =
+  | "task_issuer"
+  | "worker"
+  | "validator"
+  | "data_provider"
+  | "compute_provider"
+  | "developer"
+  | "governor"
+  | "investor";
+
+export type RoleMatrixModule =
+  | "tasks"
+  | "compute"
+  | "data"
+  | "pay"
+  | "id"
+  | "dev"
+  | "governance"
+  | "economics";
+
+export interface RoleMatrixRequirements {
+  minReputation: number;
+  requiredIdentityLevel: IdentityLevel;
+  minStake: number;
+}
+
+export type RoleActionPermissions = Record<string, boolean>;
+
+export interface RoleCapabilityMatrix {
+  tasks: RoleActionPermissions;
+  compute: RoleActionPermissions;
+  data: RoleActionPermissions;
+  pay: RoleActionPermissions;
+  id: RoleActionPermissions;
+  dev: RoleActionPermissions;
+  governance: RoleActionPermissions;
+  economics: RoleActionPermissions;
+}
+
+export interface RoleCapabilitiesResponse {
+  role: RoleMatrixParticipantRole;
+  capabilities: RoleCapabilityMatrix;
+}
+
+export interface RoleRequirementsResponse {
+  role: RoleMatrixParticipantRole;
+  requirements: RoleMatrixRequirements;
+}
+
+export interface RoleActionCheckInput {
+  role: RoleMatrixParticipantRole | string;
+  module: RoleMatrixModule;
+  action: string;
+}
+
+export interface RoleActionCheckResponse {
+  role: RoleMatrixParticipantRole;
+  module: RoleMatrixModule;
+  action: string;
+  allowed: boolean;
+}
+
+export type ParticipantMatrixType = "individual" | "organization";
+
+export type ParticipantMatrixCategory =
+  | "human_individual"
+  | "human_organization"
+  | "agent_individual"
+  | "agent_organization";
+
+export interface ParticipantMatrixCategoryInput {
+  type: ParticipantMatrixType;
+  isAgent: boolean;
+}
+
+export interface ParticipantMatrixCategoryResponse {
+  type: ParticipantMatrixType;
+  isAgent: boolean;
+  category: ParticipantMatrixCategory;
+  applicableRoles: RoleMatrixParticipantRole[];
+}
+
 
 // ── Batch 6: Ecosystem types ──────────────────────────────────
 
