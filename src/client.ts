@@ -1,5 +1,6 @@
 import type {
   AddMicropaymentInput,
+  AnalyticsPeriod,
   AntiSpamAction,
   AntiSpamCheckInput,
   AntiSpamCheckResult,
@@ -8,7 +9,10 @@ import type {
   AntiSpamRecordResult,
   AntiSpamStakeResult,
   ApiKeyInfo,
+  AppendMissionStepInput,
   CapabilityCheckResult,
+  CompensationQuote,
+  CompensationValuation,
   ComputeJobInput,
   ComputeJobResult,
   ComputePricingQuote,
@@ -16,14 +20,17 @@ import type {
   ComputeProvider,
   ComputeUsageRecord,
   CreateApiKeyInput,
+  CreateCompensationValuationInput,
   CreateDataListingInput,
   CreateDisputeInput,
+  CreateMissionInput,
   CreateTaskInput,
   CreateZKCompletionProofInput,
   CreateZKIdentityProofInput,
   CreateZKLocationProofInput,
   CreateZKReputationProofInput,
   CreditLine,
+  CrossAppSynergy,
   DIDDocument,
   DataAccessCheckResult,
   DataAccessPolicy,
@@ -36,18 +43,32 @@ import type {
   DisputeStatus,
   DisputeVoteInput,
   DevIntegration,
+  EconomicAnalytics,
+  EcosystemHealth,
+  EconomicsAsset,
+  EconomicsCompensationModel,
+  EventReplayResponse,
   GasSponsorshipGrant,
   GrantGasSponsorshipInput,
   HealthResponse,
+  HeartbeatExecution,
+  HeartbeatTask,
   IntegrityProof,
   IssueCredentialInput,
   MetricsSnapshot,
   MicropaymentAcceptedResponse,
   MicropaymentBatch,
+  ModuleDependency,
+  MissionEnvelope,
+  MissionEvidenceBundle,
+  MissionExecutionStep,
+  MissionValidationVerdict,
+  NetworkStats,
   ObservabilityHealthResponse,
   ObservabilityTracesResponse,
   OnchainParticipantIdentity,
   OpenCreditLineInput,
+  OpenMissionChallengeInput,
   OverallUsageStats,
   Participant,
   ParticipantLevelResponse,
@@ -62,24 +83,42 @@ import type {
   PublishDataAssetInput,
   PublishPluginInput,
   PurchaseDataListingInput,
+  RecordMissionVerdictInput,
   RecordReputationEventInput,
+  ReferenceAssetCompensationQuote,
   RegisterDevIntegrationInput,
+  RegisterEconomicsAssetInput,
+  RegisterHeartbeatTaskInput,
   RegisterParticipantInput,
   RegisterSDKTemplateInput,
   RegisteredApiKey,
+  RelayX402PaymentInput,
   ReputationCategory,
   ReputationEvent,
   ReputationProfile,
+  ResolveMissionChallengeInput,
   ResourceTier,
   RevenueShare,
   RoutePaymentInput,
   SDKTemplate,
-  SubmitTaskInput,
-  Task,
+  SecurityAnalytics,
+  SettlementPlan,
+  SecurityAuditInput,
+  SecurityAuditResult,
+  SponsoredGasStats,
   SubmitDisputeEvidenceInput,
+  SubmitMissionEvidenceInput,
+  SubmitTaskInput,
+  SybilResistanceAssessment,
+  Task,
+  TaskAnalytics,
+  ThreatEntry,
   UsageStats,
   VerifiableCredential,
   WorkerProfile,
+  X402PaymentReceipt,
+  ZKCircuitDefinition,
+  ZKFormalVerificationReport,
   ZKProof,
   ZKProofVerificationResult,
 } from "./types";
@@ -138,6 +177,48 @@ export class PactSdk {
     return this.request<ObservabilityTracesResponse>("GET", `/observability/traces${suffix}`);
   }
 
+  async replayEvents(fromOffset?: number, limit?: number): Promise<EventReplayResponse> {
+    const params = new URLSearchParams();
+    if (fromOffset !== undefined) {
+      params.set("fromOffset", String(fromOffset));
+    }
+    if (limit !== undefined) {
+      params.set("limit", String(limit));
+    }
+    const query = params.toString();
+    const suffix = query ? `?${query}` : "";
+    return this.request<EventReplayResponse>("GET", `/events/replay${suffix}`);
+  }
+
+  async getNetworkAnalytics(): Promise<NetworkStats> {
+    return this.request<NetworkStats>("GET", "/analytics/network");
+  }
+
+  async getTaskAnalytics(period?: AnalyticsPeriod): Promise<TaskAnalytics> {
+    const suffix = period ? `?period=${encodeURIComponent(period)}` : "";
+    return this.request<TaskAnalytics>("GET", `/analytics/tasks${suffix}`);
+  }
+
+  async getEconomicsAnalytics(): Promise<EconomicAnalytics> {
+    return this.request<EconomicAnalytics>("GET", "/analytics/economics");
+  }
+
+  async getSecurityAnalytics(): Promise<SecurityAnalytics> {
+    return this.request<SecurityAnalytics>("GET", "/analytics/security");
+  }
+
+  async getEcosystemStatus(): Promise<EcosystemHealth> {
+    return this.request<EcosystemHealth>("GET", "/ecosystem/status");
+  }
+
+  async getEcosystemModules(): Promise<ModuleDependency> {
+    return this.request<ModuleDependency>("GET", "/ecosystem/modules");
+  }
+
+  async getEcosystemSynergy(): Promise<CrossAppSynergy> {
+    return this.request<CrossAppSynergy>("GET", "/ecosystem/synergy");
+  }
+
   async createApiKey(input: CreateApiKeyInput): Promise<RegisteredApiKey> {
     return this.request<RegisteredApiKey>("POST", "/admin/api-keys", input);
   }
@@ -184,6 +265,21 @@ export class PactSdk {
     return this.request<AntiSpamStakeResult>(
       "GET",
       `/anti-spam/${encodeURIComponent(participantId)}/stake/${encodeURIComponent(action)}`,
+    );
+  }
+
+  async getSecurityThreats(): Promise<ThreatEntry[]> {
+    return this.request<ThreatEntry[]>("GET", "/security/threats");
+  }
+
+  async runSecurityAudit(input: SecurityAuditInput): Promise<SecurityAuditResult> {
+    return this.request<SecurityAuditResult>("POST", "/security/audit", input);
+  }
+
+  async getSecuritySybilResistance(participantId: string): Promise<SybilResistanceAssessment> {
+    return this.request<SybilResistanceAssessment>(
+      "GET",
+      `/security/sybil-resistance/${encodeURIComponent(participantId)}`,
     );
   }
 
@@ -338,6 +434,18 @@ export class PactSdk {
     return this.request<ZKProof | null>("GET", `/zk/proofs/${encodeURIComponent(proofId)}`);
   }
 
+  async getZKCircuitDefinition(type: ZKProof["type"]): Promise<ZKCircuitDefinition> {
+    return this.request<ZKCircuitDefinition>("GET", `/zk/circuits/${encodeURIComponent(type)}`);
+  }
+
+  async formalVerifyZKProof(proofId: string): Promise<ZKFormalVerificationReport> {
+    return this.request<ZKFormalVerificationReport>(
+      "POST",
+      `/zk/formal-verify/${encodeURIComponent(proofId)}`,
+      {},
+    );
+  }
+
   // ── Tasks ────────────────────────────────────────────────────
 
   async createTask(input: CreateTaskInput): Promise<Task> {
@@ -364,6 +472,82 @@ export class PactSdk {
     return this.request<Task>("GET", `/tasks/${encodeURIComponent(taskId)}`);
   }
 
+  async createMission(input: CreateMissionInput): Promise<MissionEnvelope> {
+    return this.request<MissionEnvelope>("POST", "/missions", input);
+  }
+
+  async listMissions(): Promise<MissionEnvelope[]> {
+    return this.request<MissionEnvelope[]>("GET", "/missions");
+  }
+
+  async getMission(missionId: string): Promise<MissionEnvelope> {
+    return this.request<MissionEnvelope>("GET", `/missions/${encodeURIComponent(missionId)}`);
+  }
+
+  async claimMission(missionId: string, agentId: string): Promise<MissionEnvelope> {
+    return this.request<MissionEnvelope>(
+      "POST",
+      `/missions/${encodeURIComponent(missionId)}/claim`,
+      { agentId },
+    );
+  }
+
+  async appendMissionStep(
+    missionId: string,
+    input: AppendMissionStepInput,
+  ): Promise<MissionExecutionStep> {
+    return this.request<MissionExecutionStep>(
+      "POST",
+      `/missions/${encodeURIComponent(missionId)}/steps`,
+      input,
+    );
+  }
+
+  async submitMissionEvidence(
+    missionId: string,
+    input: SubmitMissionEvidenceInput,
+  ): Promise<MissionEvidenceBundle> {
+    return this.request<MissionEvidenceBundle>(
+      "POST",
+      `/missions/${encodeURIComponent(missionId)}/evidence`,
+      input,
+    );
+  }
+
+  async recordMissionVerdict(
+    missionId: string,
+    input: RecordMissionVerdictInput,
+  ): Promise<MissionValidationVerdict> {
+    return this.request<MissionValidationVerdict>(
+      "POST",
+      `/missions/${encodeURIComponent(missionId)}/verdict`,
+      input,
+    );
+  }
+
+  async openMissionChallenge(
+    missionId: string,
+    input: OpenMissionChallengeInput,
+  ): Promise<MissionEnvelope> {
+    return this.request<MissionEnvelope>(
+      "POST",
+      `/missions/${encodeURIComponent(missionId)}/challenges`,
+      input,
+    );
+  }
+
+  async resolveMissionChallenge(
+    missionId: string,
+    challengeId: string,
+    input: ResolveMissionChallengeInput,
+  ): Promise<MissionEnvelope> {
+    return this.request<MissionEnvelope>(
+      "POST",
+      `/missions/${encodeURIComponent(missionId)}/challenges/${encodeURIComponent(challengeId)}/resolve`,
+      input,
+    );
+  }
+
   // ── Payment routing ──────────────────────────────────────────
 
   async routePayment(input: RoutePaymentInput): Promise<PaymentRoute> {
@@ -374,6 +558,22 @@ export class PactSdk {
       currency: input.currency,
       reference: input.reference,
     });
+  }
+
+  async relayX402Payment(input: RelayX402PaymentInput): Promise<X402PaymentReceipt> {
+    return this.request<X402PaymentReceipt>("POST", "/pay/x402/relay", {
+      fromId: input.fromId ?? input.from,
+      toId: input.toId ?? input.to,
+      amountCents: input.amountCents ?? input.amount,
+      gasSponsored: input.gasSponsored ?? false,
+    });
+  }
+
+  async getX402GasStats(beneficiaryId: string): Promise<SponsoredGasStats> {
+    return this.request<SponsoredGasStats>(
+      "GET",
+      `/pay/x402/gas-stats/${encodeURIComponent(beneficiaryId)}`,
+    );
   }
 
   async listPaymentRoutes(): Promise<PaymentRoute[]> {
@@ -422,6 +622,46 @@ export class PactSdk {
 
   async getLedger(): Promise<unknown[]> {
     return this.request<unknown[]>("GET", "/payments/ledger");
+  }
+
+  async registerEconomicsAsset(input: RegisterEconomicsAssetInput): Promise<EconomicsAsset> {
+    return this.request<EconomicsAsset>("POST", "/economics/assets", input);
+  }
+
+  async listEconomicsAssets(): Promise<EconomicsAsset[]> {
+    return this.request<EconomicsAsset[]>("GET", "/economics/assets");
+  }
+
+  async quoteEconomicsCompensation(model: EconomicsCompensationModel): Promise<CompensationQuote> {
+    return this.request<CompensationQuote>("POST", "/economics/quote", model);
+  }
+
+  async registerCompensationValuation(
+    input: CreateCompensationValuationInput,
+  ): Promise<CompensationValuation> {
+    return this.request<CompensationValuation>("POST", "/economics/valuations", input);
+  }
+
+  async listCompensationValuations(referenceAssetId?: string): Promise<CompensationValuation[]> {
+    const suffix = referenceAssetId
+      ? `?referenceAssetId=${encodeURIComponent(referenceAssetId)}`
+      : "";
+    return this.request<CompensationValuation[]>("GET", `/economics/valuations${suffix}`);
+  }
+
+  async quoteCompensationInReference(
+    model: EconomicsCompensationModel,
+    referenceAssetId: string,
+  ): Promise<ReferenceAssetCompensationQuote> {
+    return this.request<ReferenceAssetCompensationQuote>(
+      "POST",
+      "/economics/quote-reference",
+      { model, referenceAssetId },
+    );
+  }
+
+  async planCompensationSettlement(model: EconomicsCompensationModel): Promise<SettlementPlan> {
+    return this.request<SettlementPlan>("POST", "/economics/settlement-plan", model);
   }
 
   // ── Settlements (economics) ─────────────────────────────────
@@ -536,6 +776,38 @@ export class PactSdk {
   async getComputeUsageRecords(jobId?: string): Promise<ComputeUsageRecord[]> {
     const suffix = jobId ? `?jobId=${encodeURIComponent(jobId)}` : "";
     return this.request<ComputeUsageRecord[]>("GET", `/compute/usage${suffix}`);
+  }
+
+  async registerHeartbeatTask(input: RegisterHeartbeatTaskInput): Promise<HeartbeatTask> {
+    return this.request<HeartbeatTask>("POST", "/heartbeat/tasks", input);
+  }
+
+  async listHeartbeatTasks(): Promise<HeartbeatTask[]> {
+    return this.request<HeartbeatTask[]>("GET", "/heartbeat/tasks");
+  }
+
+  async enableHeartbeatTask(taskId: string): Promise<HeartbeatTask> {
+    return this.request<HeartbeatTask>(
+      "POST",
+      `/heartbeat/tasks/${encodeURIComponent(taskId)}/enable`,
+      {},
+    );
+  }
+
+  async disableHeartbeatTask(taskId: string): Promise<HeartbeatTask> {
+    return this.request<HeartbeatTask>(
+      "POST",
+      `/heartbeat/tasks/${encodeURIComponent(taskId)}/disable`,
+      {},
+    );
+  }
+
+  async tickHeartbeat(now?: number): Promise<HeartbeatExecution[]> {
+    return this.request<HeartbeatExecution[]>(
+      "POST",
+      "/heartbeat/tick",
+      now === undefined ? {} : { now },
+    );
   }
 
   // ── PactData ────────────────────────────────────────────────
@@ -666,6 +938,10 @@ export class PactSdk {
 
   async deprecateIntegration(id: string): Promise<DevIntegration> {
     return this.request<DevIntegration>("POST", `/dev/integrations/${encodeURIComponent(id)}/deprecate`);
+  }
+
+  async listPolicies(): Promise<PolicyPackage[]> {
+    return this.request<PolicyPackage[]>("GET", "/dev/policies");
   }
 
   async registerPolicy(pkg: PolicyPackage): Promise<void> {

@@ -51,12 +51,14 @@ export interface HealthResponse {
 }
 
 export type MissionStatus =
+  | "Draft"
   | "Open"
   | "Claimed"
   | "InProgress"
   | "UnderReview"
   | "Settled"
-  | "Failed";
+  | "Failed"
+  | "Cancelled";
 
 export interface AgentMission {
   id: string;
@@ -939,3 +941,594 @@ export interface SubmitDisputeEvidenceInput {
 }
 
 export interface DisputeVoteInput {
+  jurorId: string;
+  vote: "uphold" | "reject";
+  reasoning: string;
+}
+
+// ── Batch 6: Events and analytics types ───────────────────────
+
+export interface JournalEvent<TPayload = unknown> {
+  name: string;
+  payload: TPayload;
+  createdAt: number;
+}
+
+export interface EventReplayRecord {
+  offset: number;
+  event: JournalEvent;
+}
+
+export interface EventReplayResponse {
+  records: EventReplayRecord[];
+  nextOffset: number;
+}
+
+export type AnalyticsPeriod = "hour" | "day" | "week";
+
+export interface TopCategory {
+  category: string;
+  count: number;
+}
+
+export interface TopEarner {
+  participantId: string;
+  amountCents: number;
+}
+
+export interface ModuleRevenue {
+  module: string;
+  amountCents: number;
+}
+
+export interface NetworkStats {
+  totalParticipants: number;
+  totalTasks: number;
+  completedTasks: number;
+  disputeRate: number;
+  avgReputation: number;
+  totalRevenueCents: number;
+  activeComputeProviders: number;
+  dataAssetsCount: number;
+}
+
+export interface TaskAnalytics {
+  created: number;
+  completed: number;
+  failed: number;
+  avgCompletionTimeMs: number;
+  topCategories: TopCategory[];
+}
+
+export interface EconomicAnalytics {
+  totalSettled: number;
+  avgPaymentCents: number;
+  topEarners: TopEarner[];
+  revenueByModule: ModuleRevenue[];
+}
+
+export interface SecurityAnalytics {
+  spamBlockedCount: number;
+  disputeCount: number;
+  challengeCount: number;
+  avgSpamScore: number;
+}
+
+// ── Batch 6: Security route types ──────────────────────────────
+
+export type ThreatCategory =
+  | "sybil_attack"
+  | "collusion"
+  | "front_running"
+  | "replay_attack"
+  | "data_poisoning"
+  | "identity_theft"
+  | "ddos"
+  | "smart_contract_exploit";
+
+export type ThreatSeverity = "low" | "medium" | "high" | "critical";
+
+export interface ThreatEntry {
+  id: string;
+  category: ThreatCategory;
+  description: string;
+  severity: ThreatSeverity;
+  mitigations: string[];
+  residualRisk: number;
+}
+
+export interface SecurityAuditInput {
+  participants: number;
+  transactions: number;
+  disputes: number;
+  avgReputation: number;
+}
+
+export interface SecurityAuditResult {
+  timestamp: number;
+  threats: ThreatEntry[];
+  overallRiskScore: number;
+  recommendations: string[];
+}
+
+export interface SybilResistanceAssessment {
+  participantId: string;
+  score: number;
+  identityVerificationRate: number;
+  averageStakeCents: number;
+  minimumStakeCents: number;
+}
+
+// ── Batch 6: Mission route types ───────────────────────────────
+
+export type ExecutionStepKind =
+  | "tool_call"
+  | "artifact_produced"
+  | "decision"
+  | "external_action";
+
+export type MissionChallengeReason =
+  | "verdict_disagreement"
+  | "low_confidence"
+  | "manual_escalation";
+
+export interface MissionContext {
+  objective: string;
+  constraints: string[];
+  successCriteria: string[];
+  deadlineAt?: number;
+}
+
+export interface MissionCompensationLeg {
+  id: string;
+  payerId: string;
+  payeeId: string;
+  assetId: string;
+  amount: number;
+  unit: string;
+  description?: string;
+}
+
+export interface MissionCompensationModel {
+  mode: "single_asset" | "multi_asset";
+  legs: MissionCompensationLeg[];
+  settlementWindowSec?: number;
+  metadata?: Record<string, string>;
+}
+
+export interface MissionExecutionStep {
+  id: string;
+  missionId: string;
+  agentId: string;
+  kind: ExecutionStepKind;
+  summary: string;
+  inputHash?: string;
+  outputHash?: string;
+  createdAt: number;
+}
+
+export interface MissionEvidenceProvenance {
+  agentId: string;
+  stepId?: string;
+  timestamp: number;
+  signature?: string;
+}
+
+export interface MissionEvidenceBundle {
+  id: string;
+  missionId: string;
+  summary: string;
+  artifactUris: string[];
+  bundleHash: string;
+  provenance: MissionEvidenceProvenance;
+  createdAt: number;
+}
+
+export interface MissionValidationVerdict {
+  id: string;
+  missionId: string;
+  reviewerId: string;
+  approve: boolean;
+  confidence: number;
+  notes?: string;
+  createdAt: number;
+}
+
+export type MissionChallengeStakeStatus = "posted" | "returned" | "forfeited";
+
+export interface MissionChallengeStakePenalty {
+  payerId: string;
+  payeeId: string;
+  amountCents: number;
+}
+
+export interface MissionChallengeStakeDistribution {
+  juryRecipientId: string;
+  juryAmountCents: number;
+  protocolRecipientId: string;
+  protocolAmountCents: number;
+}
+
+export interface MissionChallengeStake {
+  challengeId: string;
+  challengerId: string;
+  amountCents: number;
+  minimumAmountCents: number;
+  assetId: string;
+  unit: string;
+  status: MissionChallengeStakeStatus;
+  postedAt: number;
+  returnedAt?: number;
+  forfeitedAt?: number;
+  penalty?: MissionChallengeStakePenalty;
+  distribution?: MissionChallengeStakeDistribution;
+}
+
+export type MissionChallengeStatus = "open" | "resolved";
+
+export interface MissionChallenge {
+  id: string;
+  missionId: string;
+  challengerId: string;
+  counterpartyId: string;
+  reason: MissionChallengeReason;
+  stake: MissionChallengeStake;
+  status: MissionChallengeStatus;
+  triggeredByVerdictIds: string[];
+  openedAt: number;
+  resolvedAt?: number;
+  resolution?: "approved" | "rejected";
+  resolutionNotes?: string;
+}
+
+export interface MissionEnvelope {
+  id: string;
+  issuerId: string;
+  title: string;
+  budgetCents: number;
+  context: MissionContext;
+  compensationModel?: MissionCompensationModel;
+  status: MissionStatus;
+  targetAgentIds: string[];
+  claimedBy?: string;
+  executionSteps: MissionExecutionStep[];
+  evidenceBundles: MissionEvidenceBundle[];
+  verdicts: MissionValidationVerdict[];
+  challenges: MissionChallenge[];
+  retryCount: number;
+  maxRetries: number;
+  escalationCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CreateMissionInput {
+  issuerId: string;
+  title: string;
+  budgetCents: number;
+  context: MissionContext;
+  compensationModel?: MissionCompensationModel;
+  targetAgentIds?: string[];
+  maxRetries?: number;
+}
+
+export interface AppendMissionStepInput {
+  agentId: string;
+  kind: ExecutionStepKind;
+  summary: string;
+  inputHash?: string;
+  outputHash?: string;
+}
+
+export interface SubmitMissionEvidenceInput {
+  agentId: string;
+  summary: string;
+  artifactUris: string[];
+  bundleHash: string;
+  stepId?: string;
+  signature?: string;
+}
+
+export interface RecordMissionVerdictInput {
+  reviewerId: string;
+  approve: boolean;
+  confidence: number;
+  notes?: string;
+  challengeStakeCents?: number;
+  challengeCounterpartyId?: string;
+}
+
+export interface OpenMissionChallengeInput {
+  challengerId: string;
+  counterpartyId: string;
+  reason: MissionChallengeReason;
+  stakeAmountCents?: number;
+  triggeredByVerdictIds?: string[];
+  notes?: string;
+}
+
+export interface ResolveMissionChallengeInput {
+  resolverId: string;
+  approve: boolean;
+  notes?: string;
+}
+
+// ── Batch 6: ZK circuit/formal verification types ─────────────
+
+export type ZKWireVisibility = "public" | "private" | "internal";
+
+export interface ZKCircuitWire {
+  id: string;
+  visibility: ZKWireVisibility;
+  description?: string;
+}
+
+export type ZKCircuitGateType = "add" | "mul" | "boolean" | "range" | "hash" | "eq" | "cmp";
+
+export interface ZKCircuitGate {
+  id: string;
+  type: ZKCircuitGateType;
+  inputWires: string[];
+  outputWire: string;
+  description?: string;
+}
+
+export interface ZKCircuitConstraint {
+  id: string;
+  description: string;
+}
+
+export interface ZKConstraintSystem {
+  fieldPrime: string;
+  publicInputOrder: string[];
+  wires: ZKCircuitWire[];
+  gates: ZKCircuitGate[];
+  constraints: ZKCircuitConstraint[];
+}
+
+export interface ZKCircuitDefinition {
+  proofType: ZKProofType;
+  name: string;
+  version: string;
+  provingSystem: "groth16";
+  description: string;
+  constraintSystem: ZKConstraintSystem;
+}
+
+export type ZKFormalSecurityProperty = "soundness" | "completeness" | "zero-knowledge";
+
+export interface ZKFormalProof {
+  property: ZKFormalSecurityProperty;
+  satisfied: boolean;
+  details: string;
+  checkedAt: number;
+  assumptions: string[];
+}
+
+export interface ZKFormalVerificationReport {
+  verified: boolean;
+  proofs: ZKFormalProof[];
+  checkedAt: number;
+}
+
+// ── Batch 6: X402 types ───────────────────────────────────────
+
+export interface MetaTransaction {
+  from: string;
+  to: string;
+  value: number;
+  data: string;
+  nonce: number;
+  gasPrice: number;
+  gasLimit: number;
+  relayerSignature: string;
+}
+
+export interface RelayX402PaymentInput {
+  fromId?: string;
+  toId?: string;
+  from?: string;
+  to?: string;
+  amountCents?: number;
+  amount?: number;
+  gasSponsored?: boolean;
+}
+
+export interface X402PaymentReceipt {
+  from: string;
+  to: string;
+  amountCents: number;
+  reference: string;
+  beneficiaryId: string;
+  gasSponsored: boolean;
+  gasUsed: number;
+  gasCostCents: number;
+  txId: string;
+  paymentTxId: string;
+  relayedAt: number;
+  data?: string;
+  metaTransaction: MetaTransaction;
+}
+
+export interface SponsoredGasStats {
+  beneficiaryId: string;
+  sponsoredGasUsed: number;
+  sponsoredTxCount: number;
+  lastSponsoredAt?: number;
+}
+
+// ── Batch 6: Heartbeat types ──────────────────────────────────
+
+export interface HeartbeatTask {
+  id: string;
+  name: string;
+  intervalMs: number;
+  enabled: boolean;
+  payload?: Record<string, unknown>;
+  lastRunAt?: number;
+  nextRunAt: number;
+}
+
+export interface RegisterHeartbeatTaskInput {
+  name: string;
+  intervalMs: number;
+  payload?: Record<string, unknown>;
+  startAt?: number;
+}
+
+export interface HeartbeatExecution {
+  task: HeartbeatTask;
+  executedAt: number;
+}
+
+// ── Batch 6: Economics route types ────────────────────────────
+
+export type EconomicsAssetKind =
+  | "usdc"
+  | "stablecoin"
+  | "llm_token"
+  | "cloud_credit"
+  | "api_quota"
+  | "custom";
+
+export interface EconomicsAsset {
+  id: string;
+  kind: EconomicsAssetKind;
+  symbol: string;
+  network?: string;
+  issuer?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface RegisterEconomicsAssetInput {
+  id?: string;
+  kind: EconomicsAssetKind;
+  symbol: string;
+  network?: string;
+  issuer?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface EconomicsCompensationLeg {
+  id: string;
+  payerId: string;
+  payeeId: string;
+  assetId: string;
+  amount: number;
+  unit: string;
+  description?: string;
+}
+
+export interface EconomicsCompensationModel {
+  mode: "single_asset" | "multi_asset";
+  legs: EconomicsCompensationLeg[];
+  settlementWindowSec?: number;
+  metadata?: Record<string, string>;
+}
+
+export interface CompensationQuote {
+  model: EconomicsCompensationModel;
+  totalsByAsset: Record<string, number>;
+}
+
+export interface CompensationValuation {
+  assetId: string;
+  referenceAssetId: string;
+  rate: number;
+  asOf: number;
+  source?: string;
+}
+
+export interface CreateCompensationValuationInput {
+  assetId: string;
+  referenceAssetId: string;
+  rate: number;
+  asOf?: number;
+  source?: string;
+}
+
+export interface ReferenceAssetCompensationQuote {
+  referenceAssetId: string;
+  totalsByAsset: Record<string, number>;
+  convertedByAsset: Record<string, number>;
+  totalInReference: number;
+  missingAssetIds: string[];
+}
+
+export interface SettlementPlanLine {
+  assetId: string;
+  amount: number;
+  rail: "onchain_stablecoin" | "llm_metering" | "cloud_billing" | "api_quota" | "custom";
+  unit?: string;
+}
+
+export interface SettlementPlan {
+  id: string;
+  createdAt: number;
+  lines: SettlementPlanLine[];
+}
+
+
+// ── Batch 6: Ecosystem types ──────────────────────────────────
+
+export type EcosystemModule = "tasks" | "pay" | "id" | "data" | "compute" | "dev";
+
+export type ModuleDependency = Record<EcosystemModule, EcosystemModule[]>;
+
+export interface ModuleStatSnapshot {
+  availability?: number;
+  errorRate?: number;
+  latencyMs?: number;
+  throughput?: number;
+  activeUsers?: number;
+}
+
+export type EcosystemHealthState = "healthy" | "degraded" | "critical";
+
+export interface ModuleHealth {
+  module: EcosystemModule;
+  status: EcosystemHealthState;
+  score: number;
+  availability: number;
+  errorRate: number;
+  latencyMs: number;
+  throughput: number;
+  activeUsers: number;
+  dependencies: EcosystemModule[];
+  dependencyIssues: EcosystemModule[];
+}
+
+export interface EcosystemHealth {
+  generatedAt: number;
+  score: number;
+  status: EcosystemHealthState;
+  healthyModules: number;
+  degradedModules: number;
+  criticalModules: number;
+  dependencyRisk: number;
+  modules: Record<EcosystemModule, ModuleHealth>;
+}
+
+export interface ModuleCoverage {
+  users: number;
+  adoptionRate: number;
+}
+
+export interface CrossAppSynergy {
+  generatedAt: number;
+  sevenAppModel: {
+    appCount: number;
+    maxConnectionsPerUser: number;
+    coreSurface: "pact-core";
+  };
+  activeUsers: number;
+  participatingModules: EcosystemModule[];
+  usersInMultipleModules: number;
+  crossModuleRate: number;
+  averageModulesPerUser: number;
+  averageAppsPerUser: number;
+  realizedConnectionDensity: number;
+  synergyScore: number;
+  amplificationFactor: number;
+  moduleCoverage: Record<EcosystemModule, ModuleCoverage>;
+}
