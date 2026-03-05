@@ -4,6 +4,26 @@ import type {
   RegisterParticipantInput,
   SubmitTaskInput,
   Task,
+  ComputeProvider,
+  ComputeUsageRecord,
+  ComputeJobResult,
+  ComputeJobInput,
+  DIDDocument,
+  VerifiableCredential,
+  IssueCredentialInput,
+  CapabilityCheckResult,
+  DataAsset,
+  PublishDataAssetInput,
+  ProvenanceEdge,
+  IntegrityProof,
+  DataAccessPolicy,
+  DataAccessCheckResult,
+  DevIntegration,
+  RegisterDevIntegrationInput,
+  PolicyPackage,
+  PolicyEvaluationResult,
+  SDKTemplate,
+  RegisterSDKTemplateInput,
 } from "./types";
 import {
   buildSettlementAuditQueryParams,
@@ -131,6 +151,170 @@ export class PactSdk {
 
   async getSettlementRecord(recordId: string): Promise<SettlementRecord> {
     return this.request<SettlementRecord>("GET", `/economics/settlements/records/${recordId}`);
+  }
+
+  // ── PactCompute ────────────────────────────────────────────
+
+  async registerComputeProvider(provider: ComputeProvider): Promise<void> {
+    await this.request("POST", "/compute/providers", provider);
+  }
+
+  async listComputeProviders(): Promise<ComputeProvider[]> {
+    return this.request<ComputeProvider[]>("GET", "/compute/providers");
+  }
+
+  async findComputeProviders(
+    minCpu: number,
+    minMemory: number,
+    minGpu?: number,
+  ): Promise<ComputeProvider[]> {
+    const params = new URLSearchParams({
+      minCpu: String(minCpu),
+      minMemory: String(minMemory),
+    });
+    if (minGpu !== undefined) params.set("minGpu", String(minGpu));
+    return this.request<ComputeProvider[]>("GET", `/compute/providers/search?${params}`);
+  }
+
+  async enqueueComputeJob(input: ComputeJobInput): Promise<{ id: string }> {
+    return this.request<{ id: string }>("POST", "/compute/jobs", input);
+  }
+
+  async dispatchComputeJob(jobId: string, providerId?: string): Promise<ComputeJobResult> {
+    return this.request<ComputeJobResult>(
+      "POST",
+      `/compute/jobs/${jobId}/dispatch`,
+      providerId ? { providerId } : {},
+    );
+  }
+
+  async getComputeUsageRecords(jobId?: string): Promise<ComputeUsageRecord[]> {
+    const suffix = jobId ? `?jobId=${encodeURIComponent(jobId)}` : "";
+    return this.request<ComputeUsageRecord[]>("GET", `/compute/usage${suffix}`);
+  }
+
+  // ── PactID / DID ───────────────────────────────────────────
+
+  async getDIDDocument(participantId: string): Promise<DIDDocument> {
+    return this.request<DIDDocument>("GET", `/id/did/${participantId}`);
+  }
+
+  async issueCredential(input: IssueCredentialInput): Promise<VerifiableCredential> {
+    return this.request<VerifiableCredential>("POST", "/id/credentials", input);
+  }
+
+  async verifyCredential(credential: VerifiableCredential): Promise<{ valid: boolean }> {
+    return this.request<{ valid: boolean }>("POST", "/id/credentials/verify", credential);
+  }
+
+  async checkCapability(
+    participantId: string,
+    capability: string,
+  ): Promise<CapabilityCheckResult> {
+    return this.request<CapabilityCheckResult>(
+      "GET",
+      `/id/capabilities/${participantId}/${encodeURIComponent(capability)}`,
+    );
+  }
+
+  // ── PactData ───────────────────────────────────────────────
+
+  async publishDataAsset(input: PublishDataAssetInput): Promise<DataAsset> {
+    return this.request<DataAsset>("POST", "/data/assets", input);
+  }
+
+  async listDataAssets(): Promise<DataAsset[]> {
+    return this.request<DataAsset[]>("GET", "/data/assets");
+  }
+
+  async getDataAssetLineage(assetId: string): Promise<ProvenanceEdge[]> {
+    return this.request<ProvenanceEdge[]>("GET", `/data/assets/${assetId}/lineage`);
+  }
+
+  async getDataAssetDependents(assetId: string): Promise<ProvenanceEdge[]> {
+    return this.request<ProvenanceEdge[]>("GET", `/data/assets/${assetId}/dependents`);
+  }
+
+  async registerIntegrityProof(
+    assetId: string,
+    contentHash: string,
+  ): Promise<IntegrityProof> {
+    return this.request<IntegrityProof>(
+      "POST",
+      `/data/assets/${assetId}/integrity`,
+      { contentHash },
+    );
+  }
+
+  async verifyDataIntegrity(
+    assetId: string,
+    contentHash: string,
+  ): Promise<{ valid: boolean }> {
+    return this.request<{ valid: boolean }>(
+      "POST",
+      `/data/assets/${assetId}/integrity/verify`,
+      { contentHash },
+    );
+  }
+
+  async setDataAccessPolicy(
+    assetId: string,
+    allowedParticipantIds: string[],
+    isPublic: boolean,
+  ): Promise<DataAccessPolicy> {
+    return this.request<DataAccessPolicy>(
+      "PUT",
+      `/data/assets/${assetId}/access`,
+      { allowedParticipantIds, isPublic },
+    );
+  }
+
+  async checkDataAccess(
+    assetId: string,
+    participantId: string,
+  ): Promise<DataAccessCheckResult> {
+    return this.request<DataAccessCheckResult>(
+      "GET",
+      `/data/assets/${assetId}/access/${participantId}`,
+    );
+  }
+
+  // ── PactDev ────────────────────────────────────────────────
+
+  async registerDevIntegration(input: RegisterDevIntegrationInput): Promise<DevIntegration> {
+    return this.request<DevIntegration>("POST", "/dev/integrations", input);
+  }
+
+  async listDevIntegrations(): Promise<DevIntegration[]> {
+    return this.request<DevIntegration[]>("GET", "/dev/integrations");
+  }
+
+  async activateIntegration(id: string): Promise<DevIntegration> {
+    return this.request<DevIntegration>("POST", `/dev/integrations/${id}/activate`);
+  }
+
+  async suspendIntegration(id: string): Promise<DevIntegration> {
+    return this.request<DevIntegration>("POST", `/dev/integrations/${id}/suspend`);
+  }
+
+  async deprecateIntegration(id: string): Promise<DevIntegration> {
+    return this.request<DevIntegration>("POST", `/dev/integrations/${id}/deprecate`);
+  }
+
+  async registerPolicy(pkg: PolicyPackage): Promise<void> {
+    await this.request("POST", "/dev/policies", pkg);
+  }
+
+  async evaluatePolicy(context: Record<string, unknown>): Promise<PolicyEvaluationResult> {
+    return this.request<PolicyEvaluationResult>("POST", "/dev/policies/evaluate", context);
+  }
+
+  async registerTemplate(input: RegisterSDKTemplateInput): Promise<SDKTemplate> {
+    return this.request<SDKTemplate>("POST", "/dev/templates", input);
+  }
+
+  async listTemplates(): Promise<SDKTemplate[]> {
+    return this.request<SDKTemplate[]>("GET", "/dev/templates");
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
