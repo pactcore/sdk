@@ -837,3 +837,105 @@ export interface OverallUsageStats {
   averageLatencyMs: number;
   uniqueApiKeys: number;
 }
+
+// ── Batch 4: Anti-spam types ───────────────────────────────────
+
+export type AntiSpamAction = "task_creation" | "bid_submission" | "data_listing";
+
+export interface AntiSpamCheckInput {
+  participantId: string;
+  action: AntiSpamAction;
+}
+
+export interface AntiSpamCheckResult {
+  participantId: string;
+  action: AntiSpamAction;
+  allowed: boolean;
+  retryAfterMs?: number;
+  stakeCents: number;
+  spamScore: number;
+}
+
+export interface AntiSpamRecordInput {
+  participantId: string;
+  action: AntiSpamAction;
+}
+
+export interface AntiSpamRecordResult {
+  recorded: boolean;
+}
+
+export interface AntiSpamActionWindow {
+  lastHour: number;
+  lastDay: number;
+  lastActionAt?: number;
+}
+
+export interface AntiSpamProfile {
+  spamScore: number;
+  recentActions: Record<AntiSpamAction, AntiSpamActionWindow>;
+  stakeRequirements: Record<AntiSpamAction, number>;
+}
+
+export interface AntiSpamStakeResult {
+  participantId: string;
+  action: AntiSpamAction;
+  stakeCents: number;
+  spamScore: number;
+}
+
+// ── Batch 4: Dispute types ─────────────────────────────────────
+
+export type DisputeStatus = "open" | "evidence" | "jury_vote" | "resolved";
+
+export interface DisputeEvidence {
+  submitterId: string;
+  description: string;
+  artifactUris: string[];
+  submittedAt: number;
+}
+
+export interface DisputeJuryVote {
+  jurorId: string;
+  vote: "uphold" | "reject";
+  reasoning: string;
+  votedAt: number;
+}
+
+export interface DisputeVerdict {
+  outcome: "upheld" | "rejected" | "split";
+  penaltyBps: number;
+  rewardDistribution: Record<string, number>;
+}
+
+export interface DisputeCase {
+  id: string;
+  missionId: string;
+  challengerId: string;
+  respondentId: string;
+  status: DisputeStatus;
+  evidence: DisputeEvidence[];
+  juryVotes: DisputeJuryVote[];
+  verdict?: DisputeVerdict;
+  createdAt: number;
+  resolvedAt?: number;
+}
+
+export interface DisputeEvidenceInput {
+  description: string;
+  artifactUris: string[];
+}
+
+export interface CreateDisputeInput {
+  missionId: string;
+  challengerId: string;
+  initialEvidence: DisputeEvidenceInput;
+}
+
+export interface SubmitDisputeEvidenceInput {
+  submitterId: string;
+  description: string;
+  artifactUris: string[];
+}
+
+export interface DisputeVoteInput {

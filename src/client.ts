@@ -1,5 +1,12 @@
 import type {
   AddMicropaymentInput,
+  AntiSpamAction,
+  AntiSpamCheckInput,
+  AntiSpamCheckResult,
+  AntiSpamProfile,
+  AntiSpamRecordInput,
+  AntiSpamRecordResult,
+  AntiSpamStakeResult,
   ApiKeyInfo,
   CapabilityCheckResult,
   ComputeJobInput,
@@ -10,6 +17,7 @@ import type {
   ComputeUsageRecord,
   CreateApiKeyInput,
   CreateDataListingInput,
+  CreateDisputeInput,
   CreateTaskInput,
   CreateZKCompletionProofInput,
   CreateZKIdentityProofInput,
@@ -24,6 +32,9 @@ import type {
   DataListing,
   DataMarketplaceStats,
   DataPurchase,
+  DisputeCase,
+  DisputeStatus,
+  DisputeVoteInput,
   DevIntegration,
   GasSponsorshipGrant,
   GrantGasSponsorshipInput,
@@ -65,6 +76,7 @@ import type {
   SDKTemplate,
   SubmitTaskInput,
   Task,
+  SubmitDisputeEvidenceInput,
   UsageStats,
   VerifiableCredential,
   WorkerProfile,
@@ -146,6 +158,33 @@ export class PactSdk {
 
   async getOverallUsageStats(): Promise<OverallUsageStats> {
     return this.request<OverallUsageStats>("GET", "/admin/usage/overall");
+  }
+
+  // ── Anti-spam ────────────────────────────────────────────────
+
+  async checkAntiSpam(input: AntiSpamCheckInput): Promise<AntiSpamCheckResult> {
+    return this.request<AntiSpamCheckResult>("POST", "/anti-spam/check", input);
+  }
+
+  async recordAntiSpamAction(input: AntiSpamRecordInput): Promise<AntiSpamRecordResult> {
+    return this.request<AntiSpamRecordResult>("POST", "/anti-spam/record", input);
+  }
+
+  async getAntiSpamProfile(participantId: string): Promise<AntiSpamProfile> {
+    return this.request<AntiSpamProfile>(
+      "GET",
+      `/anti-spam/${encodeURIComponent(participantId)}/profile`,
+    );
+  }
+
+  async getAntiSpamStake(
+    participantId: string,
+    action: AntiSpamAction,
+  ): Promise<AntiSpamStakeResult> {
+    return this.request<AntiSpamStakeResult>(
+      "GET",
+      `/anti-spam/${encodeURIComponent(participantId)}/stake/${encodeURIComponent(action)}`,
+    );
   }
 
   // ── Reputation ────────────────────────────────────────────────
@@ -643,6 +682,44 @@ export class PactSdk {
 
   async listTemplates(): Promise<SDKTemplate[]> {
     return this.request<SDKTemplate[]>("GET", "/dev/templates");
+  }
+
+  // ── Disputes ──────────────────────────────────────────────────
+
+  async createDispute(input: CreateDisputeInput): Promise<DisputeCase> {
+    return this.request<DisputeCase>("POST", "/disputes", input);
+  }
+
+  async listDisputes(status?: DisputeStatus): Promise<DisputeCase[]> {
+    const suffix = status ? `?status=${encodeURIComponent(status)}` : "";
+    return this.request<DisputeCase[]>("GET", `/disputes${suffix}`);
+  }
+
+  async getDispute(disputeId: string): Promise<DisputeCase> {
+    return this.request<DisputeCase>("GET", `/disputes/${encodeURIComponent(disputeId)}`);
+  }
+
+  async submitDisputeEvidence(
+    disputeId: string,
+    input: SubmitDisputeEvidenceInput,
+  ): Promise<DisputeCase> {
+    return this.request<DisputeCase>(
+      "POST",
+      `/disputes/${encodeURIComponent(disputeId)}/evidence`,
+      input,
+    );
+  }
+
+  async voteOnDispute(disputeId: string, input: DisputeVoteInput): Promise<DisputeCase> {
+    return this.request<DisputeCase>(
+      "POST",
+      `/disputes/${encodeURIComponent(disputeId)}/vote`,
+      input,
+    );
+  }
+
+  async resolveDispute(disputeId: string): Promise<DisputeCase> {
+    return this.request<DisputeCase>("POST", `/disputes/${encodeURIComponent(disputeId)}/resolve`, {});
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
