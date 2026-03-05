@@ -19,30 +19,58 @@ export interface TaskConstraints {
   requiredSkills?: string[];
   maxDistanceKm?: number;
   minReputation?: number;
+  capacityRequired?: number;
 }
 
 export interface CreateTaskInput {
-  id: string;
+  title: string;
   issuerId: string;
   description: string;
   paymentCents: number;
+  location?: GeoPoint;
   constraints?: TaskConstraints;
+  stakeCents?: number;
+  id?: string;
+}
+
+export interface TaskValidationVote {
+  participantId: string;
+  approve: boolean;
+}
+
+export interface TaskValidationEvidence {
+  autoAIScore: number;
+  agentVotes: TaskValidationVote[];
+  humanVotes: TaskValidationVote[];
 }
 
 export interface SubmitTaskInput {
-  evidence: {
-    uri: string;
-    checksum?: string;
-    notes?: string;
-  };
+  summary: string;
+  artifactUris?: string[];
+  validation?: TaskValidationEvidence;
+}
+
+export interface TaskEvidence {
+  summary: string;
+  artifactUris: string[];
+  submittedAt: number;
+  validation?: TaskValidationEvidence;
 }
 
 export interface Task {
   id: string;
+  title: string;
+  description: string;
   issuerId: string;
+  location: GeoPoint;
+  constraints: TaskConstraints;
   assigneeId?: string;
+  evidence?: TaskEvidence;
+  validatorIds: string[];
   status: "Created" | "Assigned" | "Submitted" | "Verified" | "Completed";
   paymentCents: number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface HealthResponse {
@@ -168,6 +196,13 @@ export interface ComputeJobInput {
   metadata?: Record<string, string>;
 }
 
+export interface ComputeJob {
+  id: string;
+  topic: string;
+  payload: unknown;
+  runAt: number;
+}
+
 // ── PactID / DID types ─────────────────────────────────────────
 
 export interface DIDVerificationMethod {
@@ -213,6 +248,10 @@ export interface VerifiableCredential {
   expirationDate?: number;
   credentialSubject: CredentialSubject;
   proof: CredentialProof;
+}
+
+export interface VerifyCredentialInput {
+  credential: VerifiableCredential;
 }
 
 export interface IssueCredentialInput {
@@ -291,6 +330,16 @@ export interface PolicyPackage {
   ownerId: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface RegisterPolicyInput {
+  id?: string;
+  name: string;
+  version: string;
+  rules: PolicyRule[];
+  ownerId: string;
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface PolicyEvaluationResult {
@@ -398,6 +447,15 @@ export interface PaymentRoute {
   routeType: "direct" | "swap" | "aggregated" | "credit";
   status: "pending" | "completed" | "failed";
   createdAt: number;
+}
+
+export interface PaymentLedgerEntry {
+  from: string;
+  to: string;
+  amountCents: number;
+  reference: string;
+  txId: string;
+  executedAt: number;
 }
 
 export interface RoutePaymentInput {

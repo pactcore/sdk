@@ -109,6 +109,7 @@ describe("PactSdk - Identity/DID", () => {
     });
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/id/credentials/verify");
+    expect((captured[0].body as Record<string, unknown>).credential).toBeDefined();
   });
 
   it("checkCapability → GET /id/capabilities/:id/:cap", async () => {

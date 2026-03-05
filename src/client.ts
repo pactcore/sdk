@@ -13,6 +13,7 @@ import type {
   CapabilityCheckResult,
   CompensationQuote,
   CompensationValuation,
+  ComputeJob,
   ComputeJobInput,
   ComputeJobResult,
   ComputePricingQuote,
@@ -76,11 +77,13 @@ import type {
   ParticipantLevelResponse,
   ParticipantLevelUpgradeResult,
   ParticipantStats,
+  PaymentLedgerEntry,
   PaymentRoute,
   PluginInstall,
   PluginListingView,
   PolicyEvaluationResult,
   PolicyPackage,
+  RegisterPolicyInput,
   ProvenanceEdge,
   PublishDataAssetInput,
   PublishPluginInput,
@@ -127,6 +130,7 @@ import type {
   TokenSupplyReport,
   UsageStats,
   VerifiableCredential,
+  VerifyCredentialInput,
   WorkerProfile,
   X402PaymentReceipt,
   ZKCircuitDefinition,
@@ -433,7 +437,8 @@ export class PactSdk {
   }
 
   async verifyCredential(credential: VerifiableCredential): Promise<{ valid: boolean }> {
-    return this.request<{ valid: boolean }>("POST", "/id/credentials/verify", credential);
+    const payload: VerifyCredentialInput = { credential };
+    return this.request<{ valid: boolean }>("POST", "/id/credentials/verify", payload);
   }
 
   async checkCapability(
@@ -662,8 +667,8 @@ export class PactSdk {
     );
   }
 
-  async getLedger(): Promise<unknown[]> {
-    return this.request<unknown[]>("GET", "/payments/ledger");
+  async getLedger(): Promise<PaymentLedgerEntry[]> {
+    return this.request<PaymentLedgerEntry[]>("GET", "/payments/ledger");
   }
 
   // ── Token economics ───────────────────────────────────────────
@@ -788,8 +793,8 @@ export class PactSdk {
 
   // ── PactCompute ─────────────────────────────────────────────
 
-  async registerComputeProvider(provider: ComputeProvider): Promise<void> {
-    await this.request("POST", "/compute/providers", provider);
+  async registerComputeProvider(provider: ComputeProvider): Promise<ComputeProvider> {
+    return this.request<ComputeProvider>("POST", "/compute/providers", provider);
   }
 
   async listComputeProviders(): Promise<ComputeProvider[]> {
@@ -822,8 +827,8 @@ export class PactSdk {
     });
   }
 
-  async enqueueComputeJob(input: ComputeJobInput): Promise<{ id: string }> {
-    return this.request<{ id: string }>("POST", "/compute/jobs", input);
+  async enqueueComputeJob(input: ComputeJobInput): Promise<ComputeJob> {
+    return this.request<ComputeJob>("POST", "/compute/jobs", input);
   }
 
   async dispatchComputeJob(jobId: string, providerId?: string): Promise<ComputeJobResult> {
@@ -1005,8 +1010,8 @@ export class PactSdk {
     return this.request<PolicyPackage[]>("GET", "/dev/policies");
   }
 
-  async registerPolicy(pkg: PolicyPackage): Promise<void> {
-    await this.request("POST", "/dev/policies", pkg);
+  async registerPolicy(pkg: RegisterPolicyInput): Promise<PolicyPackage> {
+    return this.request<PolicyPackage>("POST", "/dev/policies", pkg);
   }
 
   async evaluatePolicy(context: Record<string, unknown>): Promise<PolicyEvaluationResult> {
