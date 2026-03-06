@@ -80,6 +80,13 @@ describe("PactSdk - Compute", () => {
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toContain("/compute/usage?jobId=j1");
   });
+
+  it("getComputeAdapterHealth → GET /compute/adapters/health", async () => {
+    const { sdk, captured } = createMockSdk([{ adapter: "docker", state: "healthy" }]);
+    await sdk.getComputeAdapterHealth();
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/compute/adapters/health");
+  });
 });
 
 describe("PactSdk - Identity/DID", () => {
@@ -171,6 +178,13 @@ describe("PactSdk - Data", () => {
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/data/assets/d1/access/u1");
   });
+
+  it("getDataAdapterHealth → GET /data/adapters/health", async () => {
+    const { sdk, captured } = createMockSdk([{ adapter: "s3", state: "healthy" }]);
+    await sdk.getDataAdapterHealth();
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/data/adapters/health");
+  });
 });
 
 describe("PactSdk - Dev/Governance", () => {
@@ -193,6 +207,13 @@ describe("PactSdk - Dev/Governance", () => {
     await sdk.activateIntegration("dev_1");
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/dev/integrations/dev_1/activate");
+  });
+
+  it("getDevIntegrationHealth → GET /dev/integrations/health", async () => {
+    const { sdk, captured } = createMockSdk([{ integrationId: "dev_1", state: "healthy" }]);
+    await sdk.getDevIntegrationHealth();
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/dev/integrations/health");
   });
 
   it("registerPolicy → POST /dev/policies", async () => {

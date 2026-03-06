@@ -54,6 +54,31 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
     expect(captured[0].body).toBeUndefined();
   });
 
+  it("resetEconomicsConnector -> POST /economics/connectors/:connectorId/reset", async () => {
+    const { sdk, captured } = createMockSdk({
+      connector: "llm_token_metering",
+      rail: "llm_metering",
+      state: "healthy",
+    });
+
+    await sdk.resetEconomicsConnector("llm_token_metering");
+
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].url).toBe(
+      "https://api.pact/economics/connectors/llm_token_metering/reset",
+    );
+    expect(captured[0].body).toBeUndefined();
+  });
+
+  it("listPendingReconciliationSettlements -> GET /economics/reconciliation/pending", async () => {
+    const { sdk, captured } = createMockSdk([{ settlementId: "settlement-api-pending" }]);
+
+    await sdk.listPendingReconciliationSettlements();
+
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/economics/reconciliation/pending");
+  });
+
   it("listUnreconciledSettlements -> GET /economics/reconciliation/unreconciled", async () => {
     const { sdk, captured } = createMockSdk([{ settlementId: "settlement-api-reconcile" }]);
 

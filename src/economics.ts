@@ -161,6 +161,8 @@ export interface ConnectorHealthReport extends SettlementConnectorHealth {
   rail: SettlementRecord["rail"];
 }
 
+export type PendingSettlementReconciliation = UnreconciledSettlementView;
+
 export interface UnreconciledSettlementView {
   settlementId: string;
   pendingRecordCount: number;

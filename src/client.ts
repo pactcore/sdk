@@ -8,6 +8,7 @@ import type {
   AntiSpamRecordInput,
   AntiSpamRecordResult,
   AntiSpamStakeResult,
+  AdapterHealthReport,
   ApiKeyInfo,
   AppendMissionStepInput,
   CapabilityCheckResult,
@@ -46,6 +47,7 @@ import type {
   DisputeStatus,
   DisputeVoteInput,
   DevIntegration,
+  DevIntegrationHealthReport,
   EconomicAnalytics,
   EcosystemHealth,
   EconomicsAsset,
@@ -149,6 +151,7 @@ import {
   buildSettlementAuditQueryParams,
   buildSettlementReplayQueryParams,
   ConnectorHealthReport,
+  PendingSettlementReconciliation,
   ReconciliationCycleResult,
   type ReconcileSettlementRecordInput,
   SettlementExecutionRequest,
@@ -750,8 +753,19 @@ export class PactSdk {
     return this.request<ConnectorHealthReport[]>("GET", "/economics/connectors/health");
   }
 
+  async resetEconomicsConnector(connectorId: string): Promise<ConnectorHealthReport> {
+    return this.request<ConnectorHealthReport>(
+      "POST",
+      `/economics/connectors/${encodeURIComponent(connectorId)}/reset`,
+    );
+  }
+
   async runReconciliationCycle(): Promise<ReconciliationCycleResult> {
     return this.request<ReconciliationCycleResult>("POST", "/economics/reconciliation/run");
+  }
+
+  async listPendingReconciliationSettlements(): Promise<PendingSettlementReconciliation[]> {
+    return this.request<PendingSettlementReconciliation[]>("GET", "/economics/reconciliation/pending");
   }
 
   async listUnreconciledSettlements(): Promise<UnreconciledSettlementView[]> {
@@ -912,6 +926,10 @@ export class PactSdk {
     return this.request<ComputeUsageRecord[]>("GET", `/compute/usage${suffix}`);
   }
 
+  async getComputeAdapterHealth(): Promise<AdapterHealthReport[]> {
+    return this.request<AdapterHealthReport[]>("GET", "/compute/adapters/health");
+  }
+
   async registerHeartbeatTask(input: RegisterHeartbeatTaskInput): Promise<HeartbeatTask> {
     return this.request<HeartbeatTask>("POST", "/heartbeat/tasks", input);
   }
@@ -1000,6 +1018,10 @@ export class PactSdk {
     );
   }
 
+  async getDataAdapterHealth(): Promise<AdapterHealthReport[]> {
+    return this.request<AdapterHealthReport[]>("GET", "/data/adapters/health");
+  }
+
   async createDataListing(input: CreateDataListingInput): Promise<DataListing> {
     return this.request<DataListing>("POST", "/data/marketplace/list", input);
   }
@@ -1072,6 +1094,10 @@ export class PactSdk {
 
   async deprecateIntegration(id: string): Promise<DevIntegration> {
     return this.request<DevIntegration>("POST", `/dev/integrations/${encodeURIComponent(id)}/deprecate`);
+  }
+
+  async getDevIntegrationHealth(): Promise<DevIntegrationHealthReport[]> {
+    return this.request<DevIntegrationHealthReport[]>("GET", "/dev/integrations/health");
   }
 
   async listPolicies(): Promise<PolicyPackage[]> {

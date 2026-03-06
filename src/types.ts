@@ -78,6 +78,20 @@ export interface HealthResponse {
   service?: string;
 }
 
+export type AdapterHealthState = "healthy" | "degraded" | "unhealthy";
+
+export interface AdapterHealthReport {
+  adapter?: string;
+  state: AdapterHealthState;
+  [key: string]: unknown;
+}
+
+export interface DevIntegrationHealthReport {
+  integrationId?: string;
+  state: AdapterHealthState;
+  [key: string]: unknown;
+}
+
 export type MissionStatus =
   | "Draft"
   | "Open"
