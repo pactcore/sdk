@@ -1526,6 +1526,113 @@ export interface SettlementPlan {
   lines: SettlementPlanLine[];
 }
 
+// ── Batch 10: Governance and rewards route types ──────────────
+
+export type GovernanceVoteChoice = "for" | "against" | "abstain";
+
+export type GovernanceProposalStatus =
+  | "pending"
+  | "active"
+  | "succeeded"
+  | "defeated"
+  | "executed";
+
+export interface GovernanceProposalAction {
+  target: string;
+  signature: string;
+  calldata: string;
+  value: number;
+  description?: string;
+}
+
+export interface GovernanceVoteRecord {
+  proposalId: string;
+  voterId: string;
+  choice: GovernanceVoteChoice;
+  weight: number;
+  castAt: number;
+  txId: string;
+}
+
+export interface GovernanceProposal {
+  id: string;
+  proposerId: string;
+  title: string;
+  description: string;
+  actions: GovernanceProposalAction[];
+  quorum: number;
+  forVotes: number;
+  againstVotes: number;
+  abstainVotes: number;
+  status: GovernanceProposalStatus;
+  createdAt: number;
+  votingStartsAt: number;
+  votingEndsAt: number;
+  creationTxId: string;
+  executedAt?: number;
+  executedBy?: string;
+  executionTxId?: string;
+  votes: GovernanceVoteRecord[];
+}
+
+export interface CreateGovernanceProposalInput {
+  proposerId: string;
+  title: string;
+  description: string;
+  actions?: GovernanceProposalAction[];
+  quorum?: number;
+  votingStartsAt?: number;
+  votingEndsAt: number;
+}
+
+export interface VoteGovernanceProposalInput {
+  voterId: string;
+  choice?: GovernanceVoteChoice;
+  support?: boolean;
+  weight?: number;
+}
+
+export interface ExecuteGovernanceProposalInput {
+  executorId?: string;
+}
+
+export type RewardClaimStatus = "pending" | "claimed";
+
+export interface EpochRewardDistribution {
+  participantId: string;
+  amountCents: number;
+}
+
+export interface DistributeEpochRewardsInput {
+  distributions: EpochRewardDistribution[];
+}
+
+export interface ParticipantEpochReward {
+  epoch: number;
+  participantId: string;
+  amountCents: number;
+  claimStatus: RewardClaimStatus;
+  syncedAt: number;
+  claimedAt?: number;
+}
+
+export interface EpochRewardsSyncResult {
+  epoch: number;
+  participantCount: number;
+  totalAmountCents: number;
+  syncedAt: number;
+  txId: string;
+  rewards: ParticipantEpochReward[];
+}
+
+export interface ParticipantRewardsSnapshot {
+  participantId: string;
+  totalRewardsCents: number;
+  claimedRewardsCents: number;
+  pendingRewardsCents: number;
+  epochs: ParticipantEpochReward[];
+}
+
 // ── Batch 8: Token economics route types ───────────────────────
 
 export type TokenEconomicsApplication =

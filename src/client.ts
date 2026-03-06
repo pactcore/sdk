@@ -24,6 +24,7 @@ import type {
   CreateCompensationValuationInput,
   CreateDataListingInput,
   CreateDisputeInput,
+  CreateGovernanceProposalInput,
   CreateMissionInput,
   CreateTaskInput,
   CreateZKCompletionProofInput,
@@ -40,6 +41,7 @@ import type {
   DataListing,
   DataMarketplaceStats,
   DataPurchase,
+  DistributeEpochRewardsInput,
   DisputeCase,
   DisputeStatus,
   DisputeVoteInput,
@@ -48,8 +50,10 @@ import type {
   EcosystemHealth,
   EconomicsAsset,
   EconomicsCompensationModel,
+  EpochRewardsSyncResult,
   EventReplayResponse,
   GasSponsorshipGrant,
+  GovernanceProposal,
   GrantGasSponsorshipInput,
   HealthResponse,
   HeartbeatExecution,
@@ -76,6 +80,7 @@ import type {
   ParticipantMatrixCategoryResponse,
   ParticipantLevelResponse,
   ParticipantLevelUpgradeResult,
+  ParticipantRewardsSnapshot,
   ParticipantStats,
   PaymentLedgerEntry,
   PaymentRoute,
@@ -105,6 +110,7 @@ import type {
   RoleActionCheckResponse,
   RoleCapabilitiesResponse,
   RoleRequirementsResponse,
+  ExecuteGovernanceProposalInput,
   ResolveMissionChallengeInput,
   ResourceTier,
   RevenueShare,
@@ -131,6 +137,7 @@ import type {
   UsageStats,
   VerifiableCredential,
   VerifyCredentialInput,
+  VoteGovernanceProposalInput,
   WorkerProfile,
   X402PaymentReceipt,
   ZKCircuitDefinition,
@@ -141,6 +148,8 @@ import type {
 import {
   buildSettlementAuditQueryParams,
   buildSettlementReplayQueryParams,
+  ConnectorHealthReport,
+  ReconciliationCycleResult,
   type ReconcileSettlementRecordInput,
   SettlementExecutionRequest,
   SettlementExecutionResult,
@@ -150,6 +159,7 @@ import {
   SettlementRecordPageRequest,
   SettlementRecordReplayPage,
   SettlementRecordReplayRequest,
+  UnreconciledSettlementView,
 } from "./economics";
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -736,6 +746,18 @@ export class PactSdk {
     return this.request<SettlementExecutionResult>("POST", "/economics/settlements/execute", input);
   }
 
+  async getEconomicsConnectorHealth(): Promise<ConnectorHealthReport[]> {
+    return this.request<ConnectorHealthReport[]>("GET", "/economics/connectors/health");
+  }
+
+  async runReconciliationCycle(): Promise<ReconciliationCycleResult> {
+    return this.request<ReconciliationCycleResult>("POST", "/economics/reconciliation/run");
+  }
+
+  async listUnreconciledSettlements(): Promise<UnreconciledSettlementView[]> {
+    return this.request<UnreconciledSettlementView[]>("GET", "/economics/reconciliation/unreconciled");
+  }
+
   async listSettlementRecords(filter?: SettlementRecordFilter): Promise<SettlementRecord[]> {
     const suffix = buildSettlementAuditQueryParams(filter);
     const path = `/economics/settlements/records${suffix}`;
@@ -788,6 +810,52 @@ export class PactSdk {
     return this.request<SettlementRecord>(
       "GET",
       `/economics/settlements/records/${encodeURIComponent(recordId)}`,
+    );
+  }
+
+  // ── Governance & rewards ────────────────────────────────────
+
+  async createGovernanceProposal(input: CreateGovernanceProposalInput): Promise<GovernanceProposal> {
+    return this.request<GovernanceProposal>("POST", "/governance/proposals", input);
+  }
+
+  async voteOnGovernanceProposal(
+    proposalId: string,
+    input: VoteGovernanceProposalInput,
+  ): Promise<GovernanceProposal> {
+    return this.request<GovernanceProposal>(
+      "POST",
+      `/governance/proposals/${encodeURIComponent(proposalId)}/vote`,
+      input,
+    );
+  }
+
+  async executeGovernanceProposal(
+    proposalId: string,
+    input?: ExecuteGovernanceProposalInput,
+  ): Promise<GovernanceProposal> {
+    return this.request<GovernanceProposal>(
+      "POST",
+      `/governance/proposals/${encodeURIComponent(proposalId)}/execute`,
+      input,
+    );
+  }
+
+  async distributeEpochRewards(
+    epoch: number,
+    input: DistributeEpochRewardsInput,
+  ): Promise<EpochRewardsSyncResult> {
+    return this.request<EpochRewardsSyncResult>(
+      "POST",
+      `/rewards/epochs/${encodeURIComponent(String(epoch))}/distribute`,
+      input,
+    );
+  }
+
+  async getParticipantRewards(participantId: string): Promise<ParticipantRewardsSnapshot> {
+    return this.request<ParticipantRewardsSnapshot>(
+      "GET",
+      `/rewards/${encodeURIComponent(participantId)}`,
     );
   }
 

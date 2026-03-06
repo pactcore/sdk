@@ -134,6 +134,52 @@ export interface ReconcileSettlementRecordInput {
   reconciledAt?: number;
 }
 
+export type SettlementConnectorHealthState = "healthy" | "degraded" | "unhealthy";
+
+export interface SettlementConnectorRetryPolicy {
+  maxRetries: number;
+  backoffMs: number;
+}
+
+export interface SettlementConnectorFailure {
+  attempt: number;
+  failedAt: number;
+  message: string;
+  settlementId: string;
+  recordId: string;
+  idempotencyKey?: string;
+}
+
+export interface SettlementConnectorHealth {
+  state: SettlementConnectorHealthState;
+  retryPolicy: SettlementConnectorRetryPolicy;
+  lastFailure?: SettlementConnectorFailure;
+}
+
+export interface ConnectorHealthReport extends SettlementConnectorHealth {
+  connector: SettlementRecord["connector"];
+  rail: SettlementRecord["rail"];
+}
+
+export interface UnreconciledSettlementView {
+  settlementId: string;
+  pendingRecordCount: number;
+  recordIds: string[];
+  connectors: SettlementRecord["connector"][];
+  oldestCreatedAt: number;
+  records: SettlementRecord[];
+}
+
+export interface ReconciliationCycleResult {
+  startedAt: number;
+  completedAt: number;
+  scannedRecordCount: number;
+  reconciledRecordCount: number;
+  pendingRecordCount: number;
+  reconciledRecordIds: string[];
+  connectorHealth: ConnectorHealthReport[];
+}
+
 export function buildCompensationModel(input: CompensationModelInput): CompensationModel {
   const mode = input.mode ?? "multi_asset";
   const legs = input.legs.map((leg, index) => ({
