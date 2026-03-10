@@ -307,13 +307,13 @@ export type ManagedBackendHealthResponse =
   | ManagedBackendHealthSummary
   | ManagedBackendHealthReport[];
 
-export interface DevIntegrationHealthReport {
-  integrationId?: string;
-  integrationStatus?: DevIntegrationStatus;
-  webhookConfigured?: boolean;
+export interface DevIntegrationHealthReport extends AdapterHealthReport {
+  name: string;
+  checkedAt: number;
+  integrationId: string;
+  integrationStatus: DevIntegrationStatus;
+  webhookConfigured: boolean;
   version?: string;
-  state: AdapterHealthState;
-  [key: string]: unknown;
 }
 
 export interface DevIntegrationHealthSummary extends AdapterHealthSummary {
