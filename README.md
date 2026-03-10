@@ -28,6 +28,10 @@ This package is designed for **human-agent protocol participation**, not only en
   - `summarizeCompensationByAsset`
   - `quoteCompensationInReference`
   - `buildSettlementPlan`
+  - idempotent settlement execution helpers
+  - settlement audit + lifecycle replay query builders
+  - paginated reconciliation queue client methods
+- onchain governance + rewards lifecycle client methods
 
 ## Economic Model Support
 

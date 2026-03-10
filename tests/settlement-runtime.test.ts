@@ -4,20 +4,29 @@ import { buildCompensationModel, buildSettlementExecutionRequest } from "../src/
 
 describe("SDK settlement runtime helpers", () => {
   it("executes settlement and queries reconciliation/audit records through core APIs", async () => {
-    const captured: Array<{ url: string; method: string; body?: unknown }> = [];
+    const captured: Array<{
+      url: string;
+      method: string;
+      body?: unknown;
+      headers?: Record<string, string>;
+    }> = [];
     const sdk = new PactSdk({
       baseUrl: "https://core.pact",
       fetchImpl: async (input, init) => {
         const url = String(input);
         const method = init?.method ?? "GET";
         const body = init?.body ? JSON.parse(String(init.body)) : undefined;
-        captured.push({ url, method, body });
+        const headers = init?.headers
+          ? Object.fromEntries(new Headers(init.headers).entries())
+          : undefined;
+        captured.push({ url, method, body, headers });
 
         if (url.endsWith("/economics/settlements/execute")) {
           return new Response(
             JSON.stringify({
               settlementId: "settlement-sdk-1",
               executedAt: 1700000000000,
+              idempotencyKey: "sdk-settlement-1",
               records: [
                 {
                   id: "record-1",
@@ -161,10 +170,16 @@ describe("SDK settlement runtime helpers", () => {
     });
 
     const execution = await sdk.executeSettlement(
-      buildSettlementExecutionRequest(model, "settlement-sdk-1"),
+      buildSettlementExecutionRequest(model, {
+        settlementId: "settlement-sdk-1",
+        idempotencyKey: "sdk-settlement-1",
+      }),
     );
     expect(execution.records.length).toBe(1);
+    expect(execution.idempotencyKey).toBe("sdk-settlement-1");
     expect(captured[0]?.method).toBe("POST");
+    expect((captured[0]?.body as Record<string, unknown>).idempotencyKey).toBe("sdk-settlement-1");
+    expect(captured[0]?.headers?.["idempotency-key"]).toBe("sdk-settlement-1");
 
     const records = await sdk.listSettlementRecords({
       settlementId: "settlement-sdk-1",

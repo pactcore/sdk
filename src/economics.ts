@@ -58,6 +58,7 @@ export interface SettlementLine {
 export interface SettlementExecutionRequest {
   settlementId?: string;
   model: CompensationModel;
+  idempotencyKey: string;
 }
 
 export interface SettlementRecord {
@@ -84,6 +85,7 @@ export interface SettlementExecutionResult {
   settlementId: string;
   executedAt: number;
   records: SettlementRecord[];
+  idempotencyKey: string;
 }
 
 export interface SettlementRecordFilter {
@@ -134,11 +136,16 @@ export interface ReconcileSettlementRecordInput {
   reconciledAt?: number;
 }
 
-export type SettlementConnectorHealthState = "healthy" | "degraded" | "unhealthy";
+export type SettlementConnectorHealthState = "open" | "half_open" | "closed";
 
 export interface SettlementConnectorRetryPolicy {
   maxRetries: number;
   backoffMs: number;
+}
+
+export interface SettlementConnectorCircuitBreakerPolicy {
+  failureThreshold: number;
+  cooldownMs: number;
 }
 
 export interface SettlementConnectorFailure {
@@ -153,6 +160,10 @@ export interface SettlementConnectorFailure {
 export interface SettlementConnectorHealth {
   state: SettlementConnectorHealthState;
   retryPolicy: SettlementConnectorRetryPolicy;
+  circuitBreaker: SettlementConnectorCircuitBreakerPolicy;
+  consecutiveFailures: number;
+  lastFailureAt?: number;
+  lastError?: string;
   lastFailure?: SettlementConnectorFailure;
 }
 
@@ -161,7 +172,34 @@ export interface ConnectorHealthReport extends SettlementConnectorHealth {
   rail: SettlementRecord["rail"];
 }
 
-export type PendingSettlementReconciliation = UnreconciledSettlementView;
+export type ReconciliationQueueState = "pending" | "failed" | "all";
+
+export interface ReconciliationQueueRequest {
+  state?: ReconciliationQueueState;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ReconciliationQueueItem {
+  settlementId: string;
+  state: Exclude<ReconciliationQueueState, "all">;
+  idempotencyKey?: string;
+  pendingRecordCount: number;
+  failedRecordCount: number;
+  recordIds: string[];
+  connectors: SettlementRecord["connector"][];
+  oldestCreatedAt: number;
+  updatedAt: number;
+  lastError?: string;
+  records: SettlementRecord[];
+}
+
+export interface ReconciliationQueuePage {
+  items: ReconciliationQueueItem[];
+  nextCursor?: string;
+}
+
+export type PendingSettlementReconciliation = ReconciliationQueueItem;
 
 export interface UnreconciledSettlementView {
   settlementId: string;
@@ -289,15 +327,24 @@ export function buildSettlementPlan(
 
 export function buildSettlementExecutionRequest(
   model: CompensationModel,
-  settlementId?: string,
+  input: {
+    settlementId?: string;
+    idempotencyKey: string;
+  },
 ): SettlementExecutionRequest {
   if (!model.legs.length) {
     throw new Error("Settlement execution requires at least one compensation leg");
   }
 
+  const idempotencyKey = input.idempotencyKey.trim();
+  if (idempotencyKey.length === 0) {
+    throw new Error("Settlement execution requires an idempotency key");
+  }
+
   return {
     model,
-    settlementId,
+    settlementId: input.settlementId,
+    idempotencyKey,
   };
 }
 
@@ -342,6 +389,22 @@ export function buildSettlementReplayQueryParams(input: SettlementRecordReplayRe
   const query = new URLSearchParams();
   if (input.fromOffset !== undefined) {
     query.set("fromOffset", String(input.fromOffset));
+  }
+  if (input.limit !== undefined) {
+    query.set("limit", String(input.limit));
+  }
+
+  const suffix = query.toString();
+  return suffix.length > 0 ? `?${suffix}` : "";
+}
+
+export function buildReconciliationQueueQueryParams(input: ReconciliationQueueRequest = {}): string {
+  const query = new URLSearchParams();
+  if (input.state) {
+    query.set("state", input.state);
+  }
+  if (input.cursor) {
+    query.set("cursor", input.cursor);
   }
   if (input.limit !== undefined) {
     query.set("limit", String(input.limit));

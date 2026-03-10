@@ -32,7 +32,14 @@ function createMockSdk(responseBody: unknown = {}) {
 describe("PactSdk - Batch 10 - Economics reconciliation", () => {
   it("getEconomicsConnectorHealth -> GET /economics/connectors/health", async () => {
     const { sdk, captured } = createMockSdk([
-      { connector: "llm_token_metering", rail: "llm_metering", state: "healthy" },
+      {
+        connector: "llm_token_metering",
+        rail: "llm_metering",
+        state: "closed",
+        retryPolicy: { maxRetries: 2, backoffMs: 1000 },
+        circuitBreaker: { failureThreshold: 3, cooldownMs: 60000 },
+        consecutiveFailures: 0,
+      },
     ]);
 
     await sdk.getEconomicsConnectorHealth();
@@ -58,7 +65,10 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
     const { sdk, captured } = createMockSdk({
       connector: "llm_token_metering",
       rail: "llm_metering",
-      state: "healthy",
+      state: "closed",
+      retryPolicy: { maxRetries: 2, backoffMs: 1000 },
+      circuitBreaker: { failureThreshold: 3, cooldownMs: 60000 },
+      consecutiveFailures: 0,
     });
 
     await sdk.resetEconomicsConnector("llm_token_metering");
@@ -71,12 +81,30 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
   });
 
   it("listPendingReconciliationSettlements -> GET /economics/reconciliation/pending", async () => {
-    const { sdk, captured } = createMockSdk([{ settlementId: "settlement-api-pending" }]);
+    const { sdk, captured } = createMockSdk({
+      items: [{ settlementId: "settlement-api-pending", state: "pending" }],
+      nextCursor: "1",
+    });
 
-    await sdk.listPendingReconciliationSettlements();
+    const items = await sdk.listPendingReconciliationSettlements();
 
+    expect(items).toHaveLength(1);
     expect(captured[0].method).toBe("GET");
-    expect(captured[0].url).toBe("https://api.pact/economics/reconciliation/pending");
+    expect(captured[0].url).toBe("https://api.pact/economics/reconciliation/pending?state=pending");
+  });
+
+  it("queryReconciliationQueue -> GET /economics/reconciliation/pending with filters", async () => {
+    const { sdk, captured } = createMockSdk({
+      items: [{ settlementId: "settlement-api-failed", state: "failed", lastError: "boom" }],
+    });
+
+    const page = await sdk.queryReconciliationQueue({ state: "failed", cursor: "1", limit: 10 });
+
+    expect(page.items).toHaveLength(1);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe(
+      "https://api.pact/economics/reconciliation/pending?state=failed&cursor=1&limit=10",
+    );
   });
 
   it("listUnreconciledSettlements -> GET /economics/reconciliation/unreconciled", async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+  buildReconciliationQueueQueryParams,
   buildCompensationModel,
   summarizeCompensationByAsset,
   quoteCompensationInReference,
@@ -136,8 +137,12 @@ describe("SDK economics helpers", () => {
       ],
     });
 
-    const request = buildSettlementExecutionRequest(model, "settlement-sdk-1");
+    const request = buildSettlementExecutionRequest(model, {
+      settlementId: "settlement-sdk-1",
+      idempotencyKey: "sdk-settlement-1",
+    });
     expect(request.settlementId).toBe("settlement-sdk-1");
+    expect(request.idempotencyKey).toBe("sdk-settlement-1");
     expect(request.model.legs.length).toBe(1);
   });
 
@@ -160,5 +165,15 @@ describe("SDK economics helpers", () => {
   it("builds settlement replay query params", () => {
     const query = buildSettlementReplayQueryParams({ fromOffset: 3, limit: 20 });
     expect(query).toBe("?fromOffset=3&limit=20");
+  });
+
+  it("builds reconciliation queue query params", () => {
+    const query = buildReconciliationQueueQueryParams({
+      state: "failed",
+      cursor: "1",
+      limit: 25,
+    });
+
+    expect(query).toBe("?state=failed&cursor=1&limit=25");
   });
 });

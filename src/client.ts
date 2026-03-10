@@ -148,10 +148,13 @@ import type {
   ZKProofVerificationResult,
 } from "./types";
 import {
+  buildReconciliationQueueQueryParams,
   buildSettlementAuditQueryParams,
   buildSettlementReplayQueryParams,
   ConnectorHealthReport,
   PendingSettlementReconciliation,
+  ReconciliationQueuePage,
+  type ReconciliationQueueRequest,
   ReconciliationCycleResult,
   type ReconcileSettlementRecordInput,
   SettlementExecutionRequest,
@@ -746,7 +749,12 @@ export class PactSdk {
   // ── Settlements (economics) ─────────────────────────────────
 
   async executeSettlement(input: SettlementExecutionRequest): Promise<SettlementExecutionResult> {
-    return this.request<SettlementExecutionResult>("POST", "/economics/settlements/execute", input);
+    return this.request<SettlementExecutionResult>(
+      "POST",
+      "/economics/settlements/execute",
+      input,
+      { "Idempotency-Key": input.idempotencyKey },
+    );
   }
 
   async getEconomicsConnectorHealth(): Promise<ConnectorHealthReport[]> {
@@ -764,8 +772,21 @@ export class PactSdk {
     return this.request<ReconciliationCycleResult>("POST", "/economics/reconciliation/run");
   }
 
-  async listPendingReconciliationSettlements(): Promise<PendingSettlementReconciliation[]> {
-    return this.request<PendingSettlementReconciliation[]>("GET", "/economics/reconciliation/pending");
+  async queryReconciliationQueue(
+    input: ReconciliationQueueRequest = {},
+  ): Promise<ReconciliationQueuePage> {
+    const suffix = buildReconciliationQueueQueryParams(input);
+    return this.request<ReconciliationQueuePage>("GET", `/economics/reconciliation/pending${suffix}`);
+  }
+
+  async listPendingReconciliationSettlements(
+    input: Omit<ReconciliationQueueRequest, "state"> = {},
+  ): Promise<PendingSettlementReconciliation[]> {
+    const page = await this.queryReconciliationQueue({
+      ...input,
+      state: "pending",
+    });
+    return page.items;
   }
 
   async listUnreconciledSettlements(): Promise<UnreconciledSettlementView[]> {
@@ -1158,13 +1179,19 @@ export class PactSdk {
     return this.request<DisputeCase>("POST", `/disputes/${encodeURIComponent(disputeId)}/resolve`, {});
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    headers?: Record<string, string>,
+  ): Promise<T> {
     const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
       method,
       headers: {
         "content-type": "application/json",
         ...(this.apiKey ? { authorization: `Bearer ${this.apiKey}` } : {}),
         ...this.extraHeaders,
+        ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
