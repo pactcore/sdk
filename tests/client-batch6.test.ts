@@ -137,9 +137,18 @@ describe("PactSdk - Batch 6 - Security & ZK", () => {
   });
 
   it("formalVerifyZKProof -> POST /zk/formal-verify/:proofId", async () => {
-    const { sdk, captured } = createMockSdk({ verified: true, proofs: [] });
-    await sdk.formalVerifyZKProof("zk_1");
+    const { sdk, captured } = createMockSdk({
+      proofId: "zk_1",
+      proofType: "identity",
+      allSatisfied: true,
+      properties: [],
+      checkedAt: 1700000000000,
+    });
+    const report = await sdk.formalVerifyZKProof("zk_1");
 
+    expect(report.proofId).toBe("zk_1");
+    expect(report.proofType).toBe("identity");
+    expect(report.allSatisfied).toBeTrue();
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/zk/formal-verify/zk_1");
     expect(captured[0].body).toEqual({});

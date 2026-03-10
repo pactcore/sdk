@@ -61,6 +61,22 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
     expect(captured[0].body).toBeUndefined();
   });
 
+  it("getReconciliationSummary -> GET /economics/reconciliation/summary", async () => {
+    const { sdk, captured } = createMockSdk({
+      pendingSettlementCount: 1,
+      pendingRecordCount: 2,
+      failedSettlementCount: 0,
+      failedRecordCount: 0,
+      connectorHealth: [],
+    });
+
+    const summary = await sdk.getReconciliationSummary();
+
+    expect(summary.pendingSettlementCount).toBe(1);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/economics/reconciliation/summary");
+  });
+
   it("resetEconomicsConnector -> POST /economics/connectors/:connectorId/reset", async () => {
     const { sdk, captured } = createMockSdk({
       connector: "llm_token_metering",
@@ -93,17 +109,24 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
     expect(captured[0].url).toBe("https://api.pact/economics/reconciliation/pending?state=pending");
   });
 
-  it("queryReconciliationQueue -> GET /economics/reconciliation/pending with filters", async () => {
+  it("queryReconciliationQueue -> GET /economics/reconciliation/queue with filters", async () => {
     const { sdk, captured } = createMockSdk({
       items: [{ settlementId: "settlement-api-failed", state: "failed", lastError: "boom" }],
     });
 
-    const page = await sdk.queryReconciliationQueue({ state: "failed", cursor: "1", limit: 10 });
+    const page = await sdk.queryReconciliationQueue({
+      state: "failed",
+      connector: "llm_token_metering",
+      settlementId: "settlement-api-failed",
+      idempotencyKey: "idem-failed-1",
+      cursor: "1",
+      limit: 10,
+    });
 
     expect(page.items).toHaveLength(1);
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe(
-      "https://api.pact/economics/reconciliation/pending?state=failed&cursor=1&limit=10",
+      "https://api.pact/economics/reconciliation/queue?state=failed&connector=llm_token_metering&settlementId=settlement-api-failed&idempotencyKey=idem-failed-1&cursor=1&limit=10",
     );
   });
 

@@ -176,6 +176,9 @@ export type ReconciliationQueueState = "pending" | "failed" | "all";
 
 export interface ReconciliationQueueRequest {
   state?: ReconciliationQueueState;
+  connector?: SettlementRecord["connector"];
+  settlementId?: string;
+  idempotencyKey?: string;
   cursor?: string;
   limit?: number;
 }
@@ -217,6 +220,14 @@ export interface ReconciliationCycleResult {
   reconciledRecordCount: number;
   pendingRecordCount: number;
   reconciledRecordIds: string[];
+  connectorHealth: ConnectorHealthReport[];
+}
+
+export interface ReconciliationSummary {
+  pendingSettlementCount: number;
+  pendingRecordCount: number;
+  failedSettlementCount: number;
+  failedRecordCount: number;
   connectorHealth: ConnectorHealthReport[];
 }
 
@@ -402,6 +413,15 @@ export function buildReconciliationQueueQueryParams(input: ReconciliationQueueRe
   const query = new URLSearchParams();
   if (input.state) {
     query.set("state", input.state);
+  }
+  if (input.connector) {
+    query.set("connector", input.connector);
+  }
+  if (input.settlementId) {
+    query.set("settlementId", input.settlementId);
+  }
+  if (input.idempotencyKey) {
+    query.set("idempotencyKey", input.idempotencyKey);
   }
   if (input.cursor) {
     query.set("cursor", input.cursor);

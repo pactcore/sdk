@@ -73,7 +73,11 @@ import type {
   NetworkStats,
   ObservabilityHealthResponse,
   ObservabilityTracesResponse,
+  OnchainFinalitySummary,
   OnchainParticipantIdentity,
+  OnchainTransactionPage,
+  OnchainTransactionQuery,
+  OnchainTransactionRecord,
   OpenCreditLineInput,
   OpenMissionChallengeInput,
   OverallUsageStats,
@@ -154,6 +158,7 @@ import {
   ConnectorHealthReport,
   PendingSettlementReconciliation,
   ReconciliationQueuePage,
+  ReconciliationSummary,
   type ReconciliationQueueRequest,
   ReconciliationCycleResult,
   type ReconcileSettlementRecordInput,
@@ -776,16 +781,24 @@ export class PactSdk {
     input: ReconciliationQueueRequest = {},
   ): Promise<ReconciliationQueuePage> {
     const suffix = buildReconciliationQueueQueryParams(input);
-    return this.request<ReconciliationQueuePage>("GET", `/economics/reconciliation/pending${suffix}`);
+    return this.request<ReconciliationQueuePage>("GET", `/economics/reconciliation/queue${suffix}`);
+  }
+
+  async getReconciliationSummary(): Promise<ReconciliationSummary> {
+    return this.request<ReconciliationSummary>("GET", "/economics/reconciliation/summary");
   }
 
   async listPendingReconciliationSettlements(
     input: Omit<ReconciliationQueueRequest, "state"> = {},
   ): Promise<PendingSettlementReconciliation[]> {
-    const page = await this.queryReconciliationQueue({
+    const suffix = buildReconciliationQueueQueryParams({
       ...input,
       state: "pending",
     });
+    const page = await this.request<ReconciliationQueuePage>(
+      "GET",
+      `/economics/reconciliation/pending${suffix}`,
+    );
     return page.items;
   }
 
@@ -891,6 +904,24 @@ export class PactSdk {
     return this.request<ParticipantRewardsSnapshot>(
       "GET",
       `/rewards/${encodeURIComponent(participantId)}`,
+    );
+  }
+
+  async getOnchainFinalitySummary(): Promise<OnchainFinalitySummary> {
+    return this.request<OnchainFinalitySummary>("GET", "/onchain/finality/summary");
+  }
+
+  async listOnchainTransactions(
+    query: OnchainTransactionQuery = {},
+  ): Promise<OnchainTransactionPage> {
+    const suffix = buildOnchainTransactionQueryParams(query);
+    return this.request<OnchainTransactionPage>("GET", `/onchain/finality/transactions${suffix}`);
+  }
+
+  async getOnchainTransaction(txId: string): Promise<OnchainTransactionRecord> {
+    return this.request<OnchainTransactionRecord>(
+      "GET",
+      `/onchain/finality/transactions/${encodeURIComponent(txId)}`,
     );
   }
 
@@ -1207,4 +1238,35 @@ export class PactSdk {
 
     return (await response.json()) as T;
   }
+}
+
+function buildOnchainTransactionQueryParams(query: OnchainTransactionQuery = {}): string {
+  const params = new URLSearchParams();
+  if (query.status) {
+    params.set("status", query.status);
+  }
+  if (query.operation) {
+    params.set("operation", query.operation);
+  }
+  if (query.participantId) {
+    params.set("participantId", query.participantId);
+  }
+  if (query.proposalId) {
+    params.set("proposalId", query.proposalId);
+  }
+  if (query.epoch !== undefined) {
+    params.set("epoch", String(query.epoch));
+  }
+  if (query.referenceId) {
+    params.set("referenceId", query.referenceId);
+  }
+  if (query.cursor) {
+    params.set("cursor", query.cursor);
+  }
+  if (query.limit !== undefined) {
+    params.set("limit", String(query.limit));
+  }
+
+  const suffix = params.toString();
+  return suffix.length > 0 ? `?${suffix}` : "";
 }

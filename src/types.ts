@@ -1378,8 +1378,10 @@ export interface ZKFormalProof {
 }
 
 export interface ZKFormalVerificationReport {
-  verified: boolean;
-  proofs: ZKFormalProof[];
+  proofId: string;
+  proofType: ZKProofType;
+  allSatisfied: boolean;
+  properties: ZKFormalProof[];
   checkedAt: number;
 }
 
@@ -1645,6 +1647,64 @@ export interface ParticipantRewardsSnapshot {
   claimedRewardsCents: number;
   pendingRewardsCents: number;
   epochs: ParticipantEpochReward[];
+}
+
+// ── Batch 34: Onchain finality route types ───────────────────
+
+export type OnchainTransactionStatus = "submitted" | "confirmed" | "finalized" | "reorged";
+
+export type OnchainTransactionOperation =
+  | "governance_proposal_create"
+  | "governance_proposal_vote"
+  | "governance_proposal_execute"
+  | "rewards_epoch_sync"
+  | "rewards_claim_sync";
+
+export interface OnchainTransactionRecord {
+  txId: string;
+  operation: OnchainTransactionOperation;
+  status: OnchainTransactionStatus;
+  submittedAt: number;
+  includedAt?: number;
+  finalizedAt?: number;
+  reorgedAt?: number;
+  lastUpdatedAt: number;
+  participantId?: string;
+  proposalId?: string;
+  epoch?: number;
+  referenceId?: string;
+  blockNumber?: number;
+  blockHash?: string;
+  confirmations: number;
+  confirmationDepth: number;
+  finalityDepth: number;
+}
+
+export interface OnchainTransactionQuery {
+  status?: OnchainTransactionStatus | "all";
+  operation?: OnchainTransactionOperation;
+  participantId?: string;
+  proposalId?: string;
+  epoch?: number;
+  referenceId?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface OnchainTransactionPage {
+  items: OnchainTransactionRecord[];
+  nextCursor?: string;
+}
+
+export interface OnchainFinalitySummary {
+  trackedTransactionCount: number;
+  submittedCount: number;
+  confirmedCount: number;
+  finalizedCount: number;
+  reorgedCount: number;
+  headBlockNumber?: number;
+  confirmationDepth: number;
+  finalityDepth: number;
 }
 
 // ── Batch 8: Token economics route types ───────────────────────

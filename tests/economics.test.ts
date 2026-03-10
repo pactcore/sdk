@@ -170,10 +170,15 @@ describe("SDK economics helpers", () => {
   it("builds reconciliation queue query params", () => {
     const query = buildReconciliationQueueQueryParams({
       state: "failed",
+      connector: "llm_token_metering",
+      settlementId: "settlement-1",
+      idempotencyKey: "idem-1",
       cursor: "1",
       limit: 25,
     });
 
-    expect(query).toBe("?state=failed&cursor=1&limit=25");
+    expect(query).toBe(
+      "?state=failed&connector=llm_token_metering&settlementId=settlement-1&idempotencyKey=idem-1&cursor=1&limit=25",
+    );
   });
 });
