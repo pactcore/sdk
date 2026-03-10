@@ -507,8 +507,68 @@ describe("Type parity contracts", () => {
             nonce: 7,
         });
         expect(inclusion.status).toBe("confirmed");
-        expect(onchainSummary.headBlockNumber).toBe(111);
-        expect(signerAddress).toBe("0xsigner");
-        expect(signature).toBe("0xcore:7");
+    expect(onchainSummary.headBlockNumber).toBe(111);
+    expect(signerAddress).toBe("0xsigner");
+    expect(signature).toBe("0xcore:7");
+    });
+    it("models live onchain indexer contracts", async () => {
+        const head = {
+            blockNumber: 111,
+            blockHash: "0xblock-111",
+            parentHash: "0xblock-110",
+        };
+        const receipt = {
+            txId: "0xtx-1",
+            blockNumber: 111,
+            blockHash: "0xblock-111",
+        };
+        const tracked = {
+            txId: "0xtx-1",
+            operation: "rewards_epoch_sync",
+            status: "confirmed",
+            submittedAt: 1700000000000,
+            includedAt: 1700000001000,
+            lastUpdatedAt: 1700000001000,
+            blockNumber: 111,
+            blockHash: "0xblock-111",
+            confirmations: 1,
+            confirmationDepth: 2,
+            finalityDepth: 6,
+            epoch: 7,
+            referenceId: "epoch-7",
+        };
+        const dataSource = {
+            async getHeadBlock() {
+                return head;
+            },
+            async getCanonicalBlock(blockNumber) {
+                return blockNumber === head.blockNumber ? head : undefined;
+            },
+            async getTransactionReceipt(txId) {
+                return txId === receipt.txId ? receipt : undefined;
+            },
+        };
+        const event = {
+            kind: "transaction_synced",
+            txId: tracked.txId,
+            head,
+            transaction: tracked,
+        };
+        const hook = async (input) => {
+            expect(input.kind).toBe("transaction_synced");
+            expect(input.head?.blockNumber).toBe(111);
+            expect(input.transaction?.epoch).toBe(7);
+        };
+        const options = {
+            dataSource,
+            hooks: [hook],
+        };
+        const resolvedHead = await options.dataSource.getHeadBlock();
+        const resolvedCanonical = await options.dataSource.getCanonicalBlock(111);
+        const resolvedReceipt = await options.dataSource.getTransactionReceipt(tracked.txId);
+        await options.hooks?.[0]?.(event);
+        expect(resolvedHead?.parentHash).toBe("0xblock-110");
+        expect(resolvedCanonical?.blockHash).toBe("0xblock-111");
+        expect(resolvedReceipt?.txId).toBe("0xtx-1");
     });
 });
