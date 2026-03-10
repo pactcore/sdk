@@ -8,7 +8,7 @@ import type {
   AntiSpamRecordInput,
   AntiSpamRecordResult,
   AntiSpamStakeResult,
-  AdapterHealthReport,
+  AdapterHealthResponse,
   ApiKeyInfo,
   AppendMissionStepInput,
   CapabilityCheckResult,
@@ -47,7 +47,7 @@ import type {
   DisputeStatus,
   DisputeVoteInput,
   DevIntegration,
-  DevIntegrationHealthReport,
+  DevIntegrationHealthResponse,
   EconomicAnalytics,
   EcosystemHealth,
   EconomicsAsset,
@@ -63,6 +63,7 @@ import type {
   IntegrityProof,
   IssueCredentialInput,
   MetricsSnapshot,
+  ManagedBackendHealthSummary,
   MicropaymentAcceptedResponse,
   MicropaymentBatch,
   ModuleDependency,
@@ -150,6 +151,7 @@ import type {
   ZKFormalVerificationReport,
   ZKProof,
   ZKProofVerificationResult,
+  ZKVerificationReceipt,
 } from "./types";
 import {
   buildReconciliationQueueQueryParams,
@@ -500,6 +502,13 @@ export class PactSdk {
 
   async getZKProof(proofId: string): Promise<ZKProof | null> {
     return this.request<ZKProof | null>("GET", `/zk/proofs/${encodeURIComponent(proofId)}`);
+  }
+
+  async getZKProofReceipts(proofId: string): Promise<ZKVerificationReceipt[]> {
+    return this.request<ZKVerificationReceipt[]>(
+      "GET",
+      `/zk/proofs/${encodeURIComponent(proofId)}/receipts`,
+    );
   }
 
   async getZKCircuitDefinition(type: ZKProof["type"]): Promise<ZKCircuitDefinition> {
@@ -978,8 +987,12 @@ export class PactSdk {
     return this.request<ComputeUsageRecord[]>("GET", `/compute/usage${suffix}`);
   }
 
-  async getComputeAdapterHealth(): Promise<AdapterHealthReport[]> {
-    return this.request<AdapterHealthReport[]>("GET", "/compute/adapters/health");
+  async getComputeAdapterHealth(): Promise<AdapterHealthResponse> {
+    return this.request<AdapterHealthResponse>("GET", "/compute/adapters/health");
+  }
+
+  async getComputeManagedBackendHealth(): Promise<ManagedBackendHealthSummary> {
+    return this.request<ManagedBackendHealthSummary>("GET", "/compute/backends/health");
   }
 
   async registerHeartbeatTask(input: RegisterHeartbeatTaskInput): Promise<HeartbeatTask> {
@@ -1070,8 +1083,12 @@ export class PactSdk {
     );
   }
 
-  async getDataAdapterHealth(): Promise<AdapterHealthReport[]> {
-    return this.request<AdapterHealthReport[]>("GET", "/data/adapters/health");
+  async getDataAdapterHealth(): Promise<AdapterHealthResponse> {
+    return this.request<AdapterHealthResponse>("GET", "/data/adapters/health");
+  }
+
+  async getDataManagedBackendHealth(): Promise<ManagedBackendHealthSummary> {
+    return this.request<ManagedBackendHealthSummary>("GET", "/data/backends/health");
   }
 
   async createDataListing(input: CreateDataListingInput): Promise<DataListing> {
@@ -1148,8 +1165,12 @@ export class PactSdk {
     return this.request<DevIntegration>("POST", `/dev/integrations/${encodeURIComponent(id)}/deprecate`);
   }
 
-  async getDevIntegrationHealth(): Promise<DevIntegrationHealthReport[]> {
-    return this.request<DevIntegrationHealthReport[]>("GET", "/dev/integrations/health");
+  async getDevIntegrationHealth(): Promise<DevIntegrationHealthResponse> {
+    return this.request<DevIntegrationHealthResponse>("GET", "/dev/integrations/health");
+  }
+
+  async getDevManagedBackendHealth(): Promise<ManagedBackendHealthSummary> {
+    return this.request<ManagedBackendHealthSummary>("GET", "/dev/backends/health");
   }
 
   async listPolicies(): Promise<PolicyPackage[]> {

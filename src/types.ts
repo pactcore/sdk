@@ -80,17 +80,124 @@ export interface HealthResponse {
 
 export type AdapterHealthState = "healthy" | "degraded" | "unhealthy";
 
+export type AdapterDurability = "memory" | "filesystem" | "database" | "remote" | "unknown";
+
+export interface AdapterErrorDescriptor {
+  adapter: string;
+  operation: string;
+  code: string;
+  message: string;
+  retryable: boolean;
+  occurredAt: number;
+  details?: Record<string, string>;
+}
+
+export interface AdapterCompatibilityReport {
+  compatible: boolean;
+  currentVersion?: string;
+  supportedVersions?: string[];
+  reason?: string;
+}
+
 export interface AdapterHealthReport {
   adapter?: string;
+  name?: string;
+  state: AdapterHealthState;
+  checkedAt?: number;
+  durable?: boolean;
+  durability?: AdapterDurability;
+  features?: Record<string, string | number | boolean>;
+  compatibility?: AdapterCompatibilityReport;
+  lastError?: AdapterErrorDescriptor;
+  [key: string]: unknown;
+}
+
+export interface AdapterHealthSummary {
+  status: AdapterHealthState;
+  checkedAt: number;
+  adapters: AdapterHealthReport[];
+}
+
+export type ManagedBackendDomain = "data" | "compute" | "dev";
+
+export type ManagedBackendCapability = "queue" | "store" | "observability";
+
+export type ManagedBackendMode = "local" | "remote";
+
+export type ManagedBackendCredentialType =
+  | "none"
+  | "api_key"
+  | "bearer"
+  | "oauth2"
+  | "service_account";
+
+export interface ManagedBackendCredentialFieldSchema {
+  key: string;
+  required?: boolean;
+  secret?: boolean;
+}
+
+export interface ManagedBackendCredentialSchema {
+  type: ManagedBackendCredentialType;
+  fields: ManagedBackendCredentialFieldSchema[];
+}
+
+export interface ManagedBackendProfile {
+  backendId: string;
+  providerId: string;
+  displayName?: string;
+  endpoint?: string;
+  timeoutMs?: number;
+  credentialSchema?: ManagedBackendCredentialSchema;
+  configuredCredentialFields?: string[];
+  metadata?: Record<string, string>;
+}
+
+export interface ManagedBackendProfileSummary {
+  backendId: string;
+  providerId: string;
+  displayName?: string;
+  endpoint?: string;
+  timeoutMs?: number;
+  credentialType: ManagedBackendCredentialType;
+  configuredCredentialFields: string[];
+  metadata?: Record<string, string>;
+}
+
+export interface ManagedBackendHealthReport extends AdapterHealthReport {
+  domain: ManagedBackendDomain;
+  capability: ManagedBackendCapability;
+  mode: ManagedBackendMode;
+  profile?: ManagedBackendProfileSummary;
+}
+
+export interface ManagedBackendHealthSummary extends AdapterHealthSummary {
+  backends: ManagedBackendHealthReport[];
+}
+
+export type AdapterHealthResponse = AdapterHealthSummary | AdapterHealthReport[];
+
+export type ManagedBackendHealthResponse =
+  | ManagedBackendHealthSummary
+  | ManagedBackendHealthReport[];
+
+export interface DevIntegrationHealthReport {
+  integrationId?: string;
+  integrationStatus?: DevIntegrationStatus;
+  webhookConfigured?: boolean;
+  version?: string;
   state: AdapterHealthState;
   [key: string]: unknown;
 }
 
-export interface DevIntegrationHealthReport {
-  integrationId?: string;
-  state: AdapterHealthState;
-  [key: string]: unknown;
+export interface DevIntegrationHealthSummary extends AdapterHealthSummary {
+  integrations: DevIntegrationHealthReport[];
+  runtimeVersion: string;
 }
+
+export type DevIntegrationHealthResponse =
+  | DevIntegrationHealthSummary
+  | DevIntegrationHealthReport[];
 
 export type MissionStatus =
   | "Draft"
@@ -371,12 +478,16 @@ export interface DevIntegration {
   webhookUrl: string;
   status: DevIntegrationStatus;
   createdAt: number;
+  version?: string;
+  supportedCoreVersions?: string[];
 }
 
 export interface RegisterDevIntegrationInput {
   ownerId: string;
   name: string;
   webhookUrl: string;
+  version?: string;
+  supportedCoreVersions?: string[];
 }
 
 export interface SDKTemplate {
@@ -582,6 +693,55 @@ export interface RecordReputationEventInput {
 
 export type ZKProofType = "location" | "completion" | "identity" | "reputation";
 
+export type ZKArtifactRole =
+  | "wasm"
+  | "r1cs"
+  | "proving-key"
+  | "verification-key"
+  | "srs"
+  | "metadata";
+
+export interface ZKArtifactDescriptor {
+  role: ZKArtifactRole;
+  uri: string;
+  version: string;
+  integrity: string;
+  bytes?: number;
+  inlineData?: string;
+}
+
+export interface ZKArtifactManifest {
+  id: string;
+  proofType: ZKProofType;
+  manifestVersion: string;
+  runtimeVersion: string;
+  circuit: {
+    name: string;
+    version: string;
+    provingSystem: string;
+  };
+  artifacts: ZKArtifactDescriptor[];
+  createdAt: number;
+  manifestIntegrity: string;
+}
+
+export interface ZKVerificationReceipt {
+  id: string;
+  proofId: string;
+  proofType: ZKProofType;
+  verified: boolean;
+  verifier: string;
+  manifestId: string;
+  manifestVersion: string;
+  manifestIntegrity: string;
+  proofDigest: string;
+  publicInputsDigest: string;
+  traceId: string;
+  adapterReceiptId?: string;
+  details?: Record<string, string>;
+  checkedAt: number;
+}
+
 export interface ZKProof {
   id: string;
   type: ZKProofType;
@@ -639,6 +799,7 @@ export interface CreateZKReputationProofInput {
 
 export interface ZKProofVerificationResult {
   valid: boolean;
+  receipt?: ZKVerificationReceipt;
 }
 
 // ── Batch 3: Compute pricing types ──────────────────────────────
