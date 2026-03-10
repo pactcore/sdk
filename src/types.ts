@@ -108,7 +108,7 @@ export interface AdapterHealthReport {
   checkedAt?: number;
   durable?: boolean;
   durability?: AdapterDurability;
-  features?: Record<string, string | number | boolean>;
+  features?: AdapterFeatureMap;
   compatibility?: AdapterCompatibilityReport;
   lastError?: AdapterErrorDescriptor;
   [key: string]: unknown;
@@ -121,7 +121,9 @@ export interface AdapterHealthSummary {
   adapters: AdapterHealthReport[];
 }
 
-export type AdapterFeatureMap = Record<string, string | number | boolean>;
+export type AdapterFeatureValue = string | number | boolean | string[];
+
+export type AdapterFeatureMap = Record<string, AdapterFeatureValue | undefined>;
 
 export type ManagedBackendDomain = "data" | "compute" | "dev";
 
@@ -877,7 +879,7 @@ export interface ZKAdapterHealthFeatureFlags extends Partial<ZKBridgeRuntimeFeat
   providerId?: string;
   requiredCredentialFields?: string | string[];
   runtimeVersion?: string;
-  [key: string]: string | number | boolean | string[] | undefined;
+  [key: string]: AdapterFeatureValue | undefined;
 }
 
 export interface ZKAdapterHealthReport extends AdapterHealthReport {
@@ -2127,6 +2129,33 @@ export interface OnchainIndexerHookEvent {
 
 export type OnchainIndexerHook = (event: OnchainIndexerHookEvent) => void | Promise<void>;
 
+export interface OnchainBlockHeader {
+  blockNumber: number;
+  blockHash: string;
+  parentHash?: string;
+}
+
+export interface OnchainTransactionReceipt {
+  txId: string;
+  blockNumber: number;
+  blockHash: string;
+}
+
+export interface OnchainIndexerDataSource {
+  getHeadBlock(): Promise<OnchainBlockHeader | undefined>;
+  getCanonicalBlock(blockNumber: number): Promise<OnchainBlockHeader | undefined>;
+  getTransactionReceipt(txId: string): Promise<OnchainTransactionReceipt | undefined>;
+}
+
+export interface OnchainIndexerSyncEvent {
+  kind: "head_synced" | "transaction_missing" | "transaction_synced";
+  txId?: string;
+  head?: OnchainBlockHeader;
+  transaction?: OnchainTransactionRecord;
+}
+
+export type OnchainIndexerSyncHook = (event: OnchainIndexerSyncEvent) => void | Promise<void>;
+
 export interface OnchainFinalityProvider {
   trackTransaction(
     input: TrackOnchainTransactionInput,
@@ -2144,6 +2173,12 @@ export interface OnchainFinalityProvider {
   ): OnchainTransactionRecord | undefined | Promise<OnchainTransactionRecord | undefined>;
   listTransactions(query?: OnchainTransactionQuery): OnchainTransactionPage | Promise<OnchainTransactionPage>;
   getSummary(): OnchainFinalitySummary | Promise<OnchainFinalitySummary>;
+}
+
+export interface LiveOnchainIndexerOptions {
+  dataSource: OnchainIndexerDataSource;
+  finalityProvider?: OnchainFinalityProvider;
+  hooks?: OnchainIndexerSyncHook[];
 }
 
 export interface UnsignedSerializedTransaction {
