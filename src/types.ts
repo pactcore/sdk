@@ -188,6 +188,7 @@ export interface ManagedBackendHealthReport extends AdapterHealthReport {
 }
 
 export interface ManagedBackendHealthSummary extends AdapterHealthSummary {
+  adapters: ManagedBackendHealthReport[];
   backends: ManagedBackendHealthReport[];
 }
 
@@ -310,6 +311,12 @@ export type ManagedBackendHealthResponse =
   | ManagedBackendHealthSummary
   | ManagedBackendHealthReport[];
 
+export type DevIntegrationHealthFeatureFlags = AdapterFeatureMap & {
+  versionChecks?: boolean;
+  operationalHooks?: boolean;
+  runtimeVersion?: string;
+};
+
 export interface DevIntegrationHealthReport extends AdapterHealthReport {
   name: string;
   checkedAt: number;
@@ -317,9 +324,11 @@ export interface DevIntegrationHealthReport extends AdapterHealthReport {
   integrationStatus: DevIntegrationStatus;
   webhookConfigured: boolean;
   version?: string;
+  features?: DevIntegrationHealthFeatureFlags;
 }
 
 export interface DevIntegrationHealthSummary extends AdapterHealthSummary {
+  adapters: DevIntegrationHealthReport[];
   integrations: DevIntegrationHealthReport[];
   runtimeVersion: string;
 }

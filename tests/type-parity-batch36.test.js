@@ -86,13 +86,15 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
             payload: { taskId: "task-1" },
             createdAt: 1_700_000_000_000,
         });
-        expect(receipt?.state).toBe("queued");
-        expect(trace.attributes?.queuedMessages).toBe(1);
-        expect(adapterSummary.runtimeVersion).toBe("0.2.1");
-        expect(backendSummary.runtimeVersion).toBe("0.2.1");
-        expect(health.profile?.requiredCredentialFields).toEqual(["token"]);
-        expect(health.features?.executionCheckpoints).toBe(true);
-        expect(health.features?.runtimeVersion).toBe("0.2.1");
+    expect(receipt?.state).toBe("queued");
+    expect(trace.attributes?.queuedMessages).toBe(1);
+    expect(adapterSummary.runtimeVersion).toBe("0.2.1");
+    expect(backendSummary.runtimeVersion).toBe("0.2.1");
+    expect(backendSummary.adapters[0]?.domain).toBe("compute");
+    expect(backendSummary.adapters[0]?.profile?.credentialType).toBe("bearer");
+    expect(health.profile?.requiredCredentialFields).toEqual(["token"]);
+    expect(health.features?.executionCheckpoints).toBe(true);
+    expect(health.features?.runtimeVersion).toBe("0.2.1");
         expect(health.features?.supportedQueues).toEqual(["priority", "scheduled"]);
         expect((await store.get("checkpoint-1"))?.value.status).toBe("ok");
     });

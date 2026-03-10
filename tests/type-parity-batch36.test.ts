@@ -124,6 +124,8 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
     expect(trace.attributes?.queuedMessages).toBe(1);
     expect(adapterSummary.runtimeVersion).toBe("0.2.1");
     expect(backendSummary.runtimeVersion).toBe("0.2.1");
+    expect(backendSummary.adapters[0]?.domain).toBe("compute");
+    expect(backendSummary.adapters[0]?.profile?.credentialType).toBe("bearer");
     expect(health.profile?.requiredCredentialFields).toEqual(["token"]);
     expect(health.features?.executionCheckpoints).toBe(true);
     expect(health.features?.runtimeVersion).toBe("0.2.1");

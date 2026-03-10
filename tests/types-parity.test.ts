@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type {
+  ManagedBackendHealthSummary,
   DevIntegrationHealthReport,
   DevIntegrationHealthSummary,
   LiveOnchainIndexerOptions,
@@ -106,6 +107,13 @@ describe("Type parity contracts", () => {
         runtimeVersion: "0.2.0",
       },
     };
+    const summary: ManagedBackendHealthSummary = {
+      status: "healthy",
+      checkedAt: 1700000000200,
+      runtimeVersion: "0.2.0",
+      adapters: [health],
+      backends: [health],
+    };
 
     const receipt = await inventory.compute?.queue?.enqueue({
       id: "msg-1",
@@ -115,6 +123,8 @@ describe("Type parity contracts", () => {
     });
 
     expect(receipt?.state).toBe("queued");
+    expect(summary.adapters[0]?.domain).toBe("dev");
+    expect(summary.adapters[0]?.profile?.requiredCredentialFields).toEqual(["token"]);
     expect(health.features?.compatibilityChecks).toBe(true);
     expect(health.features?.runtimeVersion).toBe("0.2.0");
     expect(health.profile?.requiredCredentialFields).toEqual(["token"]);
@@ -158,7 +168,9 @@ describe("Type parity contracts", () => {
     };
 
     expect(summary.integrations[0]?.name).toBe("managed-sdk");
+    expect(summary.adapters[0]?.integrationStatus).toBe("suspended");
     expect(summary.integrations[0]?.compatibility?.compatible).toBe(false);
+    expect(summary.adapters[0]?.features?.versionChecks).toBe(true);
     expect(summary.integrations[0]?.features?.operationalHooks).toBe(true);
     expect(summary.integrations[0]?.lastError?.code).toBe("integration_version_mismatch");
   });
