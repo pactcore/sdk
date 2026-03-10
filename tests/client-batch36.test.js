@@ -386,11 +386,22 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
             adapters: [],
             integrations: [
                 {
+                    name: "managed hook",
                     integrationId: "dev_1",
                     integrationStatus: "active",
                     state: "healthy",
+                    checkedAt: 1700000000000,
                     webhookConfigured: true,
                     version: "1.2.3",
+                    features: {
+                        versionChecks: true,
+                        operationalHooks: true,
+                    },
+                    compatibility: {
+                        compatible: true,
+                        currentVersion: "0.2.0",
+                        supportedVersions: ["^0.2.0"],
+                    },
                 },
             ],
             runtimeVersion: "0.2.0",
@@ -401,7 +412,11 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
             throw new Error("expected summary payload");
         }
         expect(health.runtimeVersion).toBe("0.2.0");
+        expect(health.integrations[0]?.name).toBe("managed hook");
         expect(health.integrations[0]?.version).toBe("1.2.3");
+        expect(health.integrations[0]?.checkedAt).toBe(1700000000000);
+        expect(health.integrations[0]?.features?.operationalHooks).toBe(true);
+        expect(health.integrations[0]?.compatibility?.supportedVersions?.[0]).toBe("^0.2.0");
         expect(captured[0].method).toBe("GET");
         expect(captured[0].url).toBe("https://api.pact/dev/integrations/health");
     });
