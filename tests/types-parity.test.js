@@ -180,9 +180,48 @@ describe("Type parity contracts", () => {
                 adapterReceiptId: "receipt-1",
             },
         };
-        expect(manifest.artifacts[0]?.source).toBe("remote");
-        expect(proof.bridge?.manifestSchemaVersion).toBe("1.0.0");
-        expect(runtime.features.receiptTraceability).toBe(true);
+    expect(manifest.artifacts[0]?.source).toBe("remote");
+    expect(proof.bridge?.manifestSchemaVersion).toBe("1.0.0");
+    expect(runtime.features.receiptTraceability).toBe(true);
+    });
+    it("models Appendix C adapter health metadata", () => {
+        const adapterHealth = {
+            name: "zk-prover-bridge",
+            state: "degraded",
+            checkedAt: 1700000000100,
+            durability: "remote",
+            features: {
+                manifestCatalog: true,
+                manifestCatalogState: "unhealthy",
+                providerId: "appendix-c-provider",
+                requiredCredentialFields: ["accessToken"],
+                runtimeVersion: "0.2.0",
+                remoteAdapterSkeleton: true,
+            },
+            lastError: {
+                adapter: "zk",
+                operation: "configure_remote_bridge",
+                code: "zk_remote_endpoint_missing",
+                message: "remote endpoint missing",
+                retryable: false,
+                occurredAt: 1700000000101,
+            },
+        };
+        const summary = {
+            status: "degraded",
+            checkedAt: 1700000000200,
+            runtimeVersion: "0.2.0",
+            adapters: [adapterHealth],
+        };
+        const requiredCredentialFields = summary.adapters[0]?.features?.requiredCredentialFields;
+        expect(summary.adapters[0]?.features?.providerId).toBe("appendix-c-provider");
+        expect(summary.adapters[0]?.features?.manifestCatalogState).toBe("unhealthy");
+        expect(summary.adapters[0]?.features?.remoteAdapterSkeleton).toBe(true);
+        expect(Array.isArray(requiredCredentialFields)).toBe(true);
+        if (!Array.isArray(requiredCredentialFields)) {
+            throw new Error("expected Appendix C credential field metadata");
+        }
+        expect(requiredCredentialFields[0]).toBe("accessToken");
     });
     it("models settlement connector transport and contract surfaces", async () => {
         const transport = {

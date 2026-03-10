@@ -151,6 +151,7 @@ import type {
   WorkerProfile,
   X402PaymentReceipt,
   ZKArtifactManifest,
+  ZKAdapterHealthResponse,
   ZKBridgeRuntimeInfo,
   ZKCircuitDefinition,
   ZKFormalVerificationReport,
@@ -516,8 +517,8 @@ export class PactSdk {
     );
   }
 
-  async getZKAdapterHealth(): Promise<AdapterHealthResponse> {
-    return this.request<AdapterHealthResponse>("GET", "/zk/adapters/health");
+  async getZKAdapterHealth(): Promise<ZKAdapterHealthResponse> {
+    return this.request<ZKAdapterHealthResponse>("GET", "/zk/adapters/health");
   }
 
   async getZKBridgeRuntime(): Promise<ZKBridgeRuntimeInfo> {

@@ -861,6 +861,35 @@ export interface ZKArtifactManifest {
   manifestIntegrity: string;
 }
 
+export type ZKManifestCatalogState = AdapterHealthState;
+
+export interface ZKBridgeRuntimeFeatureFlags {
+  manifestVersioning: boolean;
+  artifactIntegrity: boolean;
+  receiptTraceability: boolean;
+  deterministicLocalAdapter: boolean;
+  remoteAdapterSkeleton: boolean;
+}
+
+export interface ZKAdapterHealthFeatureFlags extends Partial<ZKBridgeRuntimeFeatureFlags> {
+  manifestCatalog?: boolean;
+  manifestCatalogState?: ZKManifestCatalogState;
+  providerId?: string;
+  requiredCredentialFields?: string | string[];
+  runtimeVersion?: string;
+  [key: string]: string | number | boolean | string[] | undefined;
+}
+
+export interface ZKAdapterHealthReport extends AdapterHealthReport {
+  features?: ZKAdapterHealthFeatureFlags;
+}
+
+export interface ZKAdapterHealthSummary extends AdapterHealthSummary {
+  adapters: ZKAdapterHealthReport[];
+}
+
+export type ZKAdapterHealthResponse = ZKAdapterHealthSummary | ZKAdapterHealthReport[];
+
 export interface ZKBridgeRuntimeInfo {
   adapter: string;
   runtimeVersion: string;
@@ -869,13 +898,7 @@ export interface ZKBridgeRuntimeInfo {
     schemaVersions: string[];
     manifestsByType: Partial<Record<ZKProofType, string[]>>;
   };
-  features: {
-    manifestVersioning: boolean;
-    artifactIntegrity: boolean;
-    receiptTraceability: boolean;
-    deterministicLocalAdapter: boolean;
-    remoteAdapterSkeleton: boolean;
-  };
+  features: ZKBridgeRuntimeFeatureFlags;
 }
 
 export interface ExternalZKProveRequest {
