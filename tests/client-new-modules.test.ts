@@ -8,6 +8,10 @@ interface CapturedRequest {
   body?: unknown;
 }
 
+function requestBody(captured: CapturedRequest[], index = 0): Record<string, unknown> {
+  return (captured[index]?.body ?? {}) as Record<string, unknown>;
+}
+
 function createMockSdk(responseBody: unknown = {}) {
   const captured: CapturedRequest[] = [];
 
@@ -38,7 +42,7 @@ describe("PactSdk - Compute", () => {
     });
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/compute/providers");
-    expect(captured[0].body.name).toBe("gpu-node");
+    expect(requestBody(captured).name).toBe("gpu-node");
   });
 
   it("listComputeProviders → GET /compute/providers", async () => {
@@ -63,7 +67,7 @@ describe("PactSdk - Compute", () => {
     await sdk.enqueueComputeJob({ image: "python:3.12", command: "python train.py" });
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/compute/jobs");
-    expect(captured[0].body.image).toBe("python:3.12");
+    expect(requestBody(captured).image).toBe("python:3.12");
   });
 
   it("dispatchComputeJob → POST /compute/jobs/:id/dispatch", async () => {
@@ -71,7 +75,7 @@ describe("PactSdk - Compute", () => {
     await sdk.dispatchComputeJob("j1", "prov1");
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/compute/jobs/j1/dispatch");
-    expect(captured[0].body.providerId).toBe("prov1");
+    expect(requestBody(captured).providerId).toBe("prov1");
   });
 
   it("getComputeUsageRecords → GET /compute/usage", async () => {
@@ -104,7 +108,7 @@ describe("PactSdk - Identity/DID", () => {
     });
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/id/credentials");
-    expect(captured[0].body.capability).toBe("delivery.certified");
+    expect(requestBody(captured).capability).toBe("delivery.certified");
   });
 
   it("verifyCredential → POST /id/credentials/verify", async () => {
@@ -154,7 +158,7 @@ describe("PactSdk - Data", () => {
     await sdk.registerIntegrityProof("d1", "abc123");
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe("https://api.pact/data/assets/d1/integrity");
-    expect(captured[0].body.contentHash).toBe("abc123");
+    expect(requestBody(captured).contentHash).toBe("abc123");
   });
 
   it("verifyDataIntegrity → POST /data/assets/:id/integrity/verify", async () => {
@@ -169,7 +173,7 @@ describe("PactSdk - Data", () => {
     await sdk.setDataAccessPolicy("d1", ["u1", "u2"], false);
     expect(captured[0].method).toBe("PUT");
     expect(captured[0].url).toBe("https://api.pact/data/assets/d1/access");
-    expect(captured[0].body.isPublic).toBe(false);
+    expect(requestBody(captured).isPublic).toBe(false);
   });
 
   it("checkDataAccess → GET /data/assets/:id/access/:participantId", async () => {

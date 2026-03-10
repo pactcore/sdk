@@ -107,10 +107,82 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
       ],
     });
 
-    const summary = await sdk.getComputeManagedBackendHealth();
+    const health = await sdk.getComputeManagedBackendHealth();
 
-    expect(summary.status).toBe("healthy");
-    expect(summary.backends[0]?.domain).toBe("compute");
+    expect(Array.isArray(health)).toBe(false);
+    if (Array.isArray(health)) {
+      throw new Error("expected summary payload");
+    }
+    expect(health.status).toBe("healthy");
+    expect(health.backends[0]?.domain).toBe("compute");
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/compute/backends/health");
+  });
+
+  it("getComputeManagedBackendHealth supports array payloads from live backends", async () => {
+    const { sdk, captured } = createMockSdk([
+      {
+        name: "compute-store-backend",
+        domain: "compute",
+        capability: "store",
+        mode: "remote",
+        state: "degraded",
+        checkedAt: 1700000000000,
+        durable: true,
+        durability: "remote",
+        features: { executionCheckpoints: true },
+      },
+    ]);
+
+    const health = await sdk.getComputeManagedBackendHealth();
+
+    expect(Array.isArray(health)).toBe(true);
+    if (!Array.isArray(health)) {
+      throw new Error("expected array payload");
+    }
+    expect(health[0]?.mode).toBe("remote");
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/compute/backends/health");
+  });
+
+  it("getComputeManagedBackendHealth preserves list payloads with backend profile metadata", async () => {
+    const { sdk, captured } = createMockSdk([
+      {
+        name: "compute-queue-backend",
+        domain: "compute",
+        capability: "queue",
+        mode: "remote",
+        state: "degraded",
+        checkedAt: 1700000000500,
+        durable: true,
+        durability: "remote",
+        features: { liveSettlement: true, runtimeVersion: "0.2.1" },
+        compatibility: {
+          compatible: true,
+          currentVersion: "0.2.1",
+          supportedVersions: ["^0.2.0"],
+        },
+        profile: {
+          backendId: "queue_1",
+          providerId: "bridge-provider",
+          displayName: "Queue bridge",
+          endpoint: "https://queue.example",
+          timeoutMs: 2000,
+          credentialType: "api_key",
+          configuredCredentialFields: ["token"],
+          metadata: { region: "us-east-1" },
+        },
+      },
+    ]);
+
+    const health = await sdk.getComputeManagedBackendHealth();
+
+    expect(Array.isArray(health)).toBe(true);
+    if (!Array.isArray(health)) {
+      throw new Error("expected list payload");
+    }
+    expect(health[0]?.profile?.credentialType).toBe("api_key");
+    expect(health[0]?.compatibility?.supportedVersions?.[0]).toBe("^0.2.0");
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/compute/backends/health");
   });
@@ -133,9 +205,13 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
       ],
     });
 
-    const summary = await sdk.getDataManagedBackendHealth();
+    const health = await sdk.getDataManagedBackendHealth();
 
-    expect(summary.backends[0]?.capability).toBe("observability");
+    expect(Array.isArray(health)).toBe(false);
+    if (Array.isArray(health)) {
+      throw new Error("expected summary payload");
+    }
+    expect(health.backends[0]?.capability).toBe("observability");
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/data/backends/health");
   });
@@ -154,13 +230,30 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
           state: "healthy",
           checkedAt: 1700000000000,
           features: { compatibilityChecks: true, runtimeVersion: "0.2.0" },
+          compatibility: {
+            compatible: true,
+            currentVersion: "0.2.0",
+            supportedVersions: ["^0.2.0"],
+          },
+          profile: {
+            backendId: "dev_obs_1",
+            providerId: "managed-dev",
+            credentialType: "bearer",
+            configuredCredentialFields: ["token"],
+          },
         },
       ],
     });
 
-    const summary = await sdk.getDevManagedBackendHealth();
+    const health = await sdk.getDevManagedBackendHealth();
 
-    expect(summary.backends[0]?.domain).toBe("dev");
+    expect(Array.isArray(health)).toBe(false);
+    if (Array.isArray(health)) {
+      throw new Error("expected summary payload");
+    }
+    expect(health.backends[0]?.domain).toBe("dev");
+    expect(health.backends[0]?.profile?.credentialType).toBe("bearer");
+    expect(health.backends[0]?.compatibility?.currentVersion).toBe("0.2.0");
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/dev/backends/health");
   });

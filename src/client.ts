@@ -63,7 +63,7 @@ import type {
   IntegrityProof,
   IssueCredentialInput,
   MetricsSnapshot,
-  ManagedBackendHealthSummary,
+  ManagedBackendHealthResponse,
   MicropaymentAcceptedResponse,
   MicropaymentBatch,
   ModuleDependency,
@@ -991,8 +991,8 @@ export class PactSdk {
     return this.request<AdapterHealthResponse>("GET", "/compute/adapters/health");
   }
 
-  async getComputeManagedBackendHealth(): Promise<ManagedBackendHealthSummary> {
-    return this.request<ManagedBackendHealthSummary>("GET", "/compute/backends/health");
+  async getComputeManagedBackendHealth(): Promise<ManagedBackendHealthResponse> {
+    return this.request<ManagedBackendHealthResponse>("GET", "/compute/backends/health");
   }
 
   async registerHeartbeatTask(input: RegisterHeartbeatTaskInput): Promise<HeartbeatTask> {
@@ -1087,8 +1087,8 @@ export class PactSdk {
     return this.request<AdapterHealthResponse>("GET", "/data/adapters/health");
   }
 
-  async getDataManagedBackendHealth(): Promise<ManagedBackendHealthSummary> {
-    return this.request<ManagedBackendHealthSummary>("GET", "/data/backends/health");
+  async getDataManagedBackendHealth(): Promise<ManagedBackendHealthResponse> {
+    return this.request<ManagedBackendHealthResponse>("GET", "/data/backends/health");
   }
 
   async createDataListing(input: CreateDataListingInput): Promise<DataListing> {
@@ -1169,8 +1169,8 @@ export class PactSdk {
     return this.request<DevIntegrationHealthResponse>("GET", "/dev/integrations/health");
   }
 
-  async getDevManagedBackendHealth(): Promise<ManagedBackendHealthSummary> {
-    return this.request<ManagedBackendHealthSummary>("GET", "/dev/backends/health");
+  async getDevManagedBackendHealth(): Promise<ManagedBackendHealthResponse> {
+    return this.request<ManagedBackendHealthResponse>("GET", "/dev/backends/health");
   }
 
   async listPolicies(): Promise<PolicyPackage[]> {
