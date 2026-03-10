@@ -87,4 +87,79 @@ describe("PactSdk - Batch 35 - Onchain finality", () => {
         expect(captured[0].method).toBe("GET");
         expect(captured[0].url).toBe("https://api.pact/onchain/finality/transactions/0xtx-reorged");
     });
+    it("trackOnchainTransaction -> POST /onchain/finality/transactions", async () => {
+        const { sdk, captured } = createMockSdk({
+            txId: "0xtx-track-1",
+            operation: "governance_proposal_vote",
+            status: "submitted",
+            submittedAt: 1700000000000,
+            lastUpdatedAt: 1700000000000,
+            participantId: "council-2",
+            proposalId: "proposal-2",
+            confirmations: 0,
+            confirmationDepth: 2,
+            finalityDepth: 4,
+        });
+        const transaction = await sdk.trackOnchainTransaction({
+            txId: "0xtx-track-1",
+            operation: "governance_proposal_vote",
+            participantId: "council-2",
+            proposalId: "proposal-2",
+            submittedAt: 1700000000000,
+        });
+        expect(transaction.status).toBe("submitted");
+        expect(captured[0].method).toBe("POST");
+        expect(captured[0].url).toBe("https://api.pact/onchain/finality/transactions");
+        expect(captured[0].body.txId).toBe("0xtx-track-1");
+        expect(captured[0].body.proposalId).toBe("proposal-2");
+    });
+    it("recordOnchainTransactionInclusion -> POST /onchain/finality/transactions/:txId/inclusion", async () => {
+        const { sdk, captured } = createMockSdk({
+            txId: "0xtx-track-1",
+            operation: "governance_proposal_vote",
+            status: "confirmed",
+            submittedAt: 1700000000000,
+            includedAt: 1700000001000,
+            lastUpdatedAt: 1700000001000,
+            blockNumber: 77,
+            blockHash: "0xblock-77",
+            confirmations: 1,
+            confirmationDepth: 2,
+            finalityDepth: 4,
+        });
+        const transaction = await sdk.recordOnchainTransactionInclusion({
+            txId: "0xtx-track-1",
+            blockNumber: 77,
+            blockHash: "0xblock-77",
+            includedAt: 1700000001000,
+        });
+        expect(transaction.status).toBe("confirmed");
+        expect(captured[0].method).toBe("POST");
+        expect(captured[0].url).toBe("https://api.pact/onchain/finality/transactions/0xtx-track-1/inclusion");
+        expect(captured[0].body.txId).toBeUndefined();
+        expect(captured[0].body.blockNumber).toBe(77);
+    });
+    it("recordCanonicalBlock -> POST /onchain/finality/blocks/canonical", async () => {
+        const captured = [];
+        const sdk = new PactSdk({
+            baseUrl: "https://api.pact",
+            fetchImpl: async (input, init) => {
+                const body = init?.body ? JSON.parse(init.body) : undefined;
+                captured.push({
+                    method: init?.method ?? "GET",
+                    url: String(input),
+                    body,
+                });
+                return new Response(null, { status: 204 });
+            },
+        });
+        await sdk.recordCanonicalBlock({
+            blockNumber: 77,
+            blockHash: "0xblock-77",
+        });
+        expect(captured[0].method).toBe("POST");
+        expect(captured[0].url).toBe("https://api.pact/onchain/finality/blocks/canonical");
+        expect(captured[0].body.blockNumber).toBe(77);
+        expect(captured[0].body.blockHash).toBe("0xblock-77");
+    });
 });

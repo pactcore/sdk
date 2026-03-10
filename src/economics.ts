@@ -68,9 +68,10 @@ export type SettlementConnector =
   | "cloud_credit_billing"
   | "api_quota_allocation";
 
-export type SettlementConnectorKind = Exclude<SettlementConnector, "stablecoin_bridge">;
+export type SettlementConnectorKind = SettlementConnector;
 
 export type SettlementConnectorOperation =
+  | "submit_stablecoin_transfer"
   | "apply_metering_credit"
   | "apply_billing_credit"
   | "allocate_quota";
@@ -137,21 +138,43 @@ export interface SettlementConnectorProfileSummary {
 export interface SettlementConnectorRequest {
   settlementId: string;
   recordId: string;
+  legId: string;
   assetId: string;
   amount: number;
   unit: string;
   payerId: string;
   payeeId: string;
-  externalReference: string;
+  externalReference?: string;
   idempotencyKey?: string;
+  metadata?: Record<string, string>;
   connectorMetadata?: Record<string, string>;
 }
 
 export interface SettlementConnectorResult {
+  status: "applied";
   externalReference: string;
-  appliedAt: number;
+  processedAt: number;
+  metadata?: Record<string, string>;
+  appliedAt?: number;
   idempotencyKey?: string;
   connectorMetadata?: Record<string, string>;
+}
+
+export interface StablecoinBridgeSettlementRequest
+  extends Omit<SettlementConnectorRequest, "externalReference"> {
+  externalReference: string;
+  chainId: number;
+  network: string;
+  tokenAddress: string;
+  fromAddress: string;
+  toAddress: string;
+}
+
+export interface StablecoinBridgeSettlementResult extends SettlementConnectorResult {
+  transactionHash?: string;
+  chainId?: number;
+  network?: string;
+  blockNumber?: number;
 }
 
 export interface SettlementExecutionRequest {
@@ -281,6 +304,12 @@ export interface ManagedSettlementConnector {
   hasExternalReference(externalReference: string): Promise<boolean>;
 }
 
+export interface StablecoinBridgeConnector extends ManagedSettlementConnector {
+  submitStablecoinTransfer(
+    input: StablecoinBridgeSettlementRequest,
+  ): Promise<StablecoinBridgeSettlementResult>;
+}
+
 export interface LlmTokenMeteringConnector extends ManagedSettlementConnector {
   applyMeteringCredit(input: SettlementConnectorRequest): Promise<SettlementConnectorResult>;
 }
@@ -294,6 +323,7 @@ export interface ApiQuotaAllocationConnector extends ManagedSettlementConnector 
 }
 
 export interface SettlementConnectors {
+  stablecoinBridge: StablecoinBridgeConnector;
   llmTokenMetering: LlmTokenMeteringConnector;
   cloudCreditBilling: CloudCreditBillingConnector;
   apiQuotaAllocation: ApiQuotaAllocationConnector;

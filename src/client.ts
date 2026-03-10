@@ -79,6 +79,8 @@ import type {
   OnchainTransactionPage,
   OnchainTransactionQuery,
   OnchainTransactionRecord,
+  RecordCanonicalBlockInput,
+  RecordOnchainTransactionInclusionInput,
   OpenCreditLineInput,
   OpenMissionChallengeInput,
   OverallUsageStats,
@@ -135,6 +137,7 @@ import type {
   Task,
   TaskAnalytics,
   ThreatEntry,
+  TrackOnchainTransactionInput,
   TokenApyInput,
   TokenApyReport,
   TokenBurnRateInput,
@@ -954,6 +957,27 @@ export class PactSdk {
       "GET",
       `/onchain/finality/transactions/${encodeURIComponent(txId)}`,
     );
+  }
+
+  async trackOnchainTransaction(
+    input: TrackOnchainTransactionInput,
+  ): Promise<OnchainTransactionRecord> {
+    return this.request<OnchainTransactionRecord>("POST", "/onchain/finality/transactions", input);
+  }
+
+  async recordOnchainTransactionInclusion(
+    input: RecordOnchainTransactionInclusionInput,
+  ): Promise<OnchainTransactionRecord> {
+    const { txId, ...body } = input;
+    return this.request<OnchainTransactionRecord>(
+      "POST",
+      `/onchain/finality/transactions/${encodeURIComponent(txId)}/inclusion`,
+      body,
+    );
+  }
+
+  async recordCanonicalBlock(input: RecordCanonicalBlockInput): Promise<void> {
+    await this.request<void>("POST", "/onchain/finality/blocks/canonical", input);
   }
 
   // ── PactCompute ─────────────────────────────────────────────

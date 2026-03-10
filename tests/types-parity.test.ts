@@ -15,6 +15,7 @@ import type {
 } from "../src/types";
 import type {
   SettlementConnectorRequest,
+  StablecoinBridgeSettlementRequest,
   SettlementConnectors,
   SettlementConnectorTransport,
   SettlementConnectorTransportRequest,
@@ -175,17 +176,65 @@ describe("Type parity contracts", () => {
     const request: SettlementConnectorRequest = {
       settlementId: "settlement-1",
       recordId: "record-1",
+      legId: "leg-1",
       assetId: "llm-gpt5",
       amount: 42,
       unit: "token",
       payerId: "issuer-1",
       payeeId: "agent-1",
-      externalReference: "ext-1",
       idempotencyKey: "idem-1",
-      connectorMetadata: { ledger: "primary" },
+      metadata: { ledger: "primary" },
+    };
+    const stablecoinRequest: StablecoinBridgeSettlementRequest = {
+      settlementId: "settlement-onchain-1",
+      recordId: "record-onchain-1",
+      legId: "leg-onchain-1",
+      assetId: "usdc-mainnet",
+      amount: 25,
+      unit: "USDC",
+      payerId: "issuer-1",
+      payeeId: "agent-1",
+      externalReference: "0xtx-1",
+      idempotencyKey: "idem-onchain-1",
+      connectorMetadata: { bridge: "mainnet-usdc" },
+      chainId: 1,
+      network: "ethereum",
+      tokenAddress: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      fromAddress: "0x1111111111111111111111111111111111111111",
+      toAddress: "0x2222222222222222222222222222222222222222",
     };
 
     const connectors: SettlementConnectors = {
+      stablecoinBridge: {
+        getHealth() {
+          return {
+            state: "closed",
+            retryPolicy: { maxRetries: 3, backoffMs: 1000 },
+            circuitBreaker: { failureThreshold: 5, cooldownMs: 60000 },
+            timeoutMs: 5000,
+            consecutiveFailures: 0,
+          };
+        },
+        resetHealth() {
+          return;
+        },
+        async hasExternalReference(externalReference) {
+          return externalReference === stablecoinRequest.externalReference;
+        },
+        async submitStablecoinTransfer(input) {
+          return {
+            status: "applied",
+            externalReference: input.externalReference ?? "0xtx-1",
+            processedAt: 1700000001500,
+            idempotencyKey: input.idempotencyKey,
+            connectorMetadata: input.connectorMetadata,
+            transactionHash: input.externalReference ?? "0xtx-1",
+            chainId: input.chainId,
+            network: input.network,
+            blockNumber: 123,
+          };
+        },
+      },
       llmTokenMetering: {
         getHealth() {
           return {
@@ -200,14 +249,15 @@ describe("Type parity contracts", () => {
           return;
         },
         async hasExternalReference(externalReference) {
-          return externalReference === request.externalReference;
+          return externalReference === "ext-1";
         },
         async applyMeteringCredit(input) {
           return {
-            externalReference: input.externalReference,
-            appliedAt: 1700000002000,
+            status: "applied",
+            externalReference: `metering:${input.recordId}`,
+            processedAt: 1700000002000,
             idempotencyKey: input.idempotencyKey,
-            connectorMetadata: input.connectorMetadata,
+            metadata: input.metadata,
           };
         },
       },
@@ -229,8 +279,9 @@ describe("Type parity contracts", () => {
         },
         async applyBillingCredit(input) {
           return {
-            externalReference: input.externalReference,
-            appliedAt: 1700000002000,
+            status: "applied",
+            externalReference: `billing:${input.recordId}`,
+            processedAt: 1700000002000,
           };
         },
       },
@@ -252,8 +303,9 @@ describe("Type parity contracts", () => {
         },
         async allocateQuota(input) {
           return {
-            externalReference: input.externalReference,
-            appliedAt: 1700000002000,
+            status: "applied",
+            externalReference: `quota:${input.recordId}`,
+            processedAt: 1700000002000,
           };
         },
       },
@@ -270,10 +322,20 @@ describe("Type parity contracts", () => {
     });
 
     const result = await connectors.llmTokenMetering.applyMeteringCredit(request);
+    const stablecoinResult = await connectors.stablecoinBridge.submitStablecoinTransfer(
+      stablecoinRequest,
+    );
 
     expect(response.status).toBe(200);
+    expect(result.status).toBe("applied");
+    expect(result.externalReference).toBe("metering:record-1");
+    expect(result.metadata?.ledger).toBe("primary");
     expect(result.idempotencyKey).toBe("idem-1");
+    expect(stablecoinResult.status).toBe("applied");
+    expect(stablecoinResult.transactionHash).toBe("0xtx-1");
+    expect(stablecoinResult.chainId).toBe(1);
     expect(await connectors.llmTokenMetering.hasExternalReference("ext-1")).toBe(true);
+    expect(await connectors.stablecoinBridge.hasExternalReference("0xtx-1")).toBe(true);
   });
 
   it("models onchain finality provider and signer contracts", async () => {

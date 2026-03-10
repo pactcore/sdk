@@ -19,6 +19,7 @@ import type {
   SettlementConnectorProviderProfile,
   SettlementConnectorTransportRequest,
   SettlementConnectorTransportResponse,
+  StablecoinBridgeSettlementRequest,
 } from "../src/economics";
 
 describe("SDK type parity - batch 36 bridge contracts", () => {
@@ -123,6 +124,48 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
       status: 201,
       body: { externalReference: "ext-1" },
     };
+    const stablecoinRequest: StablecoinBridgeSettlementRequest = {
+      settlementId: "settlement-onchain-1",
+      recordId: "record-onchain-1",
+      legId: "leg-onchain-1",
+      assetId: "usdc-mainnet",
+      amount: 25,
+      unit: "USDC",
+      payerId: "issuer-1",
+      payeeId: "agent-1",
+      externalReference: "0xtx-1",
+      idempotencyKey: "idem-onchain-1",
+      connectorMetadata: { bridge: "mainnet-usdc" },
+      chainId: 1,
+      network: "ethereum",
+      tokenAddress: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      fromAddress: "0x1111111111111111111111111111111111111111",
+      toAddress: "0x2222222222222222222222222222222222222222",
+    };
+    const stablecoinBridge = {
+      getHealth() {
+        return health;
+      },
+      resetHealth() {
+        return;
+      },
+      async hasExternalReference(externalReference: string) {
+        return externalReference === stablecoinRequest.externalReference;
+      },
+      async submitStablecoinTransfer(input: StablecoinBridgeSettlementRequest) {
+        return {
+          status: "applied",
+          externalReference: input.externalReference ?? "0xtx-1",
+          processedAt: 1_700_000_000_500,
+          idempotencyKey: input.idempotencyKey,
+          connectorMetadata: input.connectorMetadata,
+          transactionHash: input.externalReference ?? "0xtx-1",
+          chainId: input.chainId,
+          network: input.network,
+          blockNumber: 123,
+        };
+      },
+    };
     const tx: OnchainTransactionRecord = {
       txId: "0xtx-1",
       operation: "governance_proposal_create",
@@ -224,10 +267,13 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
       adapterReceiptId: "adapter-verify-1",
       details: { manifestVersion: manifest.manifestVersion },
     };
+    const stablecoinResult = await stablecoinBridge.submitStablecoinTransfer(stablecoinRequest);
 
     expect(health.profile?.credentialType).toBe("bearer");
     expect(transportRequest.connector).toBe("llm_token_metering");
     expect(transportResponse.status).toBe(201);
+    expect(stablecoinResult.transactionHash).toBe("0xtx-1");
+    expect(stablecoinResult.chainId).toBe(1);
     expect(provider.getSummary().trackedTransactionCount).toBe(1);
     expect(await signer.signTransaction({ to: tx.txId, data: "0x1234", nonce: 0 })).toContain("0x1234");
     expect(proveResponse.adapterReceiptId).toBe("adapter-1");

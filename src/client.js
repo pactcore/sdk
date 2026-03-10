@@ -421,6 +421,16 @@ export class PactSdk {
     async getOnchainTransaction(txId) {
         return this.request("GET", `/onchain/finality/transactions/${encodeURIComponent(txId)}`);
     }
+    async trackOnchainTransaction(input) {
+        return this.request("POST", "/onchain/finality/transactions", input);
+    }
+    async recordOnchainTransactionInclusion(input) {
+        const { txId, ...body } = input;
+        return this.request("POST", `/onchain/finality/transactions/${encodeURIComponent(txId)}/inclusion`, body);
+    }
+    async recordCanonicalBlock(input) {
+        await this.request("POST", "/onchain/finality/blocks/canonical", input);
+    }
     // ── PactCompute ─────────────────────────────────────────────
     async registerComputeProvider(provider) {
         return this.request("POST", "/compute/providers", provider);

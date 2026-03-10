@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
   type LlmTokenMeteringConnector,
+  type StablecoinBridgeConnector,
   type SettlementConnectorRequest,
+  type StablecoinBridgeSettlementRequest,
   buildReconciliationQueueQueryParams,
   buildCompensationModel,
   summarizeCompensationByAsset,
@@ -211,29 +213,83 @@ describe("SDK economics helpers", () => {
       resetHealth: () => {},
       hasExternalReference: async (externalReference) => externalReference === "metering-1",
       applyMeteringCredit: async (input) => ({
-        externalReference: `metering:${input.idempotencyKey}`,
-        appliedAt: 1700000000000,
-        connectorMetadata: input.metadata,
+        status: "applied",
+        externalReference: `metering:${input.recordId}`,
+        processedAt: 1700000000000,
+        metadata: input.metadata,
       }),
     };
 
     const request: SettlementConnectorRequest = {
       settlementId: "settlement-1",
       recordId: "record-1",
+      legId: "leg-1",
       assetId: "llm-gpt5",
       payerId: "issuer-1",
       payeeId: "worker-1",
       amount: 42000,
       unit: "token",
-      externalReference: "metering-1",
       idempotencyKey: "idem-connector-1",
-      connectorMetadata: { provider: "gpt5" },
+      metadata: { provider: "gpt5" },
     };
 
     const result = await connector.applyMeteringCredit(request);
 
-    expect(result.externalReference).toBe("metering-1");
-    expect(result.connectorMetadata?.provider).toBe("gpt5");
+    expect(result.status).toBe("applied");
+    expect(result.externalReference).toBe("metering:record-1");
+    expect(result.processedAt).toBe(1700000000000);
+    expect(result.metadata?.provider).toBe("gpt5");
     expect(await connector.hasExternalReference("metering-1")).toBe(true);
+  });
+
+  it("supports stablecoin bridge settlement request/result contracts", async () => {
+    const connector: StablecoinBridgeConnector = {
+      getHealth: () => ({
+        state: "closed",
+        retryPolicy: { maxRetries: 3, backoffMs: 250 },
+        circuitBreaker: { failureThreshold: 5, cooldownMs: 1000 },
+        timeoutMs: 2000,
+        consecutiveFailures: 0,
+      }),
+      resetHealth: () => {},
+      hasExternalReference: async (externalReference) => externalReference === "0xtx-1",
+      submitStablecoinTransfer: async (input) => ({
+        status: "applied",
+        externalReference: input.externalReference ?? "0xtx-1",
+        processedAt: 1700000000100,
+        idempotencyKey: input.idempotencyKey,
+        connectorMetadata: input.connectorMetadata,
+        transactionHash: "0xtx-1",
+        chainId: input.chainId,
+        network: input.network,
+        blockNumber: 123,
+      }),
+    };
+
+    const request: StablecoinBridgeSettlementRequest = {
+      settlementId: "settlement-onchain-1",
+      recordId: "record-onchain-1",
+      legId: "leg-onchain-1",
+      assetId: "usdc-mainnet",
+      payerId: "issuer-1",
+      payeeId: "worker-1",
+      amount: 25,
+      unit: "USDC",
+      externalReference: "0xtx-1",
+      idempotencyKey: "idem-bridge-1",
+      connectorMetadata: { bridge: "mainnet-usdc" },
+      chainId: 1,
+      network: "ethereum",
+      tokenAddress: "0xA0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      fromAddress: "0x1111111111111111111111111111111111111111",
+      toAddress: "0x2222222222222222222222222222222222222222",
+    };
+
+    const result = await connector.submitStablecoinTransfer(request);
+
+    expect(result.transactionHash).toBe("0xtx-1");
+    expect(result.chainId).toBe(1);
+    expect(result.blockNumber).toBe(123);
+    expect(await connector.hasExternalReference("0xtx-1")).toBe(true);
   });
 });
