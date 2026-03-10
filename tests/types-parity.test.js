@@ -74,6 +74,46 @@ describe("Type parity contracts", () => {
     expect(health.features?.runtimeVersion).toBe("0.2.0");
     expect((await inventory.data?.store?.get("artifact-1"))?.etag).toBe("etag-1");
   });
+    it("models dev integration health adapter surfaces", () => {
+        const integrationHealth = {
+            name: "managed-sdk",
+            integrationId: "dev-1",
+            integrationStatus: "suspended",
+            state: "degraded",
+            checkedAt: 1700000000200,
+            webhookConfigured: true,
+            version: "1.2.3",
+            compatibility: {
+                compatible: false,
+                currentVersion: "0.2.0",
+                supportedVersions: ["^0.3.0"],
+                reason: "Runtime version is outside the declared compatibility set",
+            },
+            features: {
+                versionChecks: true,
+                operationalHooks: true,
+            },
+            lastError: {
+                adapter: "dev",
+                operation: "get_integration_health",
+                code: "integration_version_mismatch",
+                message: "managed SDK version is incompatible",
+                retryable: false,
+                occurredAt: 1700000000100,
+            },
+        };
+        const summary = {
+            status: "degraded",
+            checkedAt: 1700000000300,
+            runtimeVersion: "0.2.0",
+            adapters: [integrationHealth],
+            integrations: [integrationHealth],
+        };
+        expect(summary.integrations[0]?.name).toBe("managed-sdk");
+        expect(summary.integrations[0]?.compatibility?.compatible).toBe(false);
+        expect(summary.integrations[0]?.features?.operationalHooks).toBe(true);
+        expect(summary.integrations[0]?.lastError?.code).toBe("integration_version_mismatch");
+    });
     it("models Appendix C manifest and bridge runtime fields", () => {
         const manifest = {
             id: "manifest-1",
