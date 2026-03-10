@@ -1,4 +1,4 @@
-import type { AdapterCompatibilityReport, AdapterDurability } from "./types";
+import type { AdapterCompatibilityReport, AdapterDurability, AdapterFeatureMap } from "./types";
 
 export type CompensationAssetKind =
   | "usdc"
@@ -285,13 +285,19 @@ export interface SettlementConnectorFailure {
   idempotencyKey?: string;
 }
 
+export type SettlementConnectorFeatureFlags = AdapterFeatureMap & {
+  liveSettlement?: boolean;
+  onchainFinality?: boolean;
+  runtimeVersion?: string;
+};
+
 export interface SettlementConnectorHealth {
   adapter?: string;
   state: SettlementConnectorHealthState;
   checkedAt?: number;
   durable?: boolean;
   durability?: AdapterDurability;
-  features?: Record<string, string | number | boolean>;
+  features?: SettlementConnectorFeatureFlags;
   compatibility?: AdapterCompatibilityReport;
   retryPolicy: SettlementConnectorRetryPolicy;
   circuitBreaker: SettlementConnectorCircuitBreakerPolicy;
