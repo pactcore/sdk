@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type {
+  ManagedBackendHealthReport,
   ManagedBackendInventory,
   ManagedBackendObservabilityAdapter,
   ManagedBackendQueueAdapter,
@@ -76,6 +77,18 @@ describe("Type parity contracts", () => {
       data: { store },
       dev: { observability },
     };
+    const health: ManagedBackendHealthReport = {
+      name: "dev-observability-backend",
+      domain: "dev",
+      capability: "observability",
+      mode: "local",
+      state: "healthy",
+      checkedAt: 1700000000100,
+      features: {
+        compatibilityChecks: true,
+        runtimeVersion: "0.2.0",
+      },
+    };
 
     const receipt = await inventory.compute?.queue?.enqueue({
       id: "msg-1",
@@ -85,6 +98,8 @@ describe("Type parity contracts", () => {
     });
 
     expect(receipt?.state).toBe("queued");
+    expect(health.features?.compatibilityChecks).toBe(true);
+    expect(health.features?.runtimeVersion).toBe("0.2.0");
     expect((await inventory.data?.store?.get("artifact-1"))?.etag).toBe("etag-1");
   });
 
@@ -206,7 +221,7 @@ describe("Type parity contracts", () => {
 
     const connectors: SettlementConnectors = {
       stablecoinBridge: {
-        getHealth() {
+        async getHealth() {
           return {
             state: "closed",
             retryPolicy: { maxRetries: 3, backoffMs: 1000 },
@@ -215,7 +230,7 @@ describe("Type parity contracts", () => {
             consecutiveFailures: 0,
           };
         },
-        resetHealth() {
+        async resetHealth() {
           return;
         },
         async hasExternalReference(externalReference) {
@@ -364,7 +379,7 @@ describe("Type parity contracts", () => {
     };
 
     const provider: OnchainFinalityProvider = {
-      trackTransaction(input) {
+      async trackTransaction(input) {
         return {
           ...tracked,
           txId: input.txId,
@@ -375,7 +390,7 @@ describe("Type parity contracts", () => {
           lastUpdatedAt: input.submittedAt ?? tracked.submittedAt,
         };
       },
-      recordTransactionInclusion(input) {
+      async recordTransactionInclusion(input) {
         return {
           ...tracked,
           status: "confirmed",
@@ -386,25 +401,25 @@ describe("Type parity contracts", () => {
           confirmations: 1,
         };
       },
-      recordCanonicalBlock() {
+      async recordCanonicalBlock() {
         return;
       },
-      advanceHead() {
+      async advanceHead() {
         return summary;
       },
-      getTransaction() {
+      async getTransaction() {
         return tracked;
       },
-      listTransactions() {
+      async listTransactions() {
         return { items: [tracked] };
       },
-      getSummary() {
+      async getSummary() {
         return summary;
       },
     };
 
     const signer: TransactionSigner = {
-      getAddress() {
+      async getAddress() {
         return "0xsigner";
       },
       async signTransaction(payload: UnsignedSerializedTransaction) {
@@ -412,11 +427,13 @@ describe("Type parity contracts", () => {
       },
     };
 
-    const inclusion = provider.recordTransactionInclusion({
+    const inclusion = await provider.recordTransactionInclusion({
       txId: "0xtx-1",
       blockNumber: 111,
       blockHash: "0xblock",
     });
+    const onchainSummary = await provider.getSummary();
+    const signerAddress = await signer.getAddress();
     const signature = await signer.signTransaction({
       to: "0xcore",
       data: "0xdeadbeef",
@@ -424,7 +441,8 @@ describe("Type parity contracts", () => {
     });
 
     expect(inclusion.status).toBe("confirmed");
-    expect(provider.getSummary().headBlockNumber).toBe(111);
+    expect(onchainSummary.headBlockNumber).toBe(111);
+    expect(signerAddress).toBe("0xsigner");
     expect(signature).toBe("0xcore:7");
   });
 });

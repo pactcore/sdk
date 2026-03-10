@@ -184,6 +184,7 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
     const { sdk, captured } = createMockSdk({
       status: "healthy",
       checkedAt: 1700000000000,
+      runtimeVersion: "0.2.1",
       adapters: [],
       backends: [
         {
@@ -207,7 +208,9 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
       throw new Error("expected summary payload");
     }
     expect(health.status).toBe("healthy");
+    expect(health.runtimeVersion).toBe("0.2.1");
     expect(health.backends[0]?.domain).toBe("compute");
+    expect(health.backends[0]?.features?.executionCheckpoints).toBe(true);
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/compute/backends/health");
   });
@@ -275,6 +278,9 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
       throw new Error("expected list payload");
     }
     expect(health[0]?.profile?.credentialType).toBe("api_key");
+    expect(health[0]?.features?.runtimeVersion).toBe("0.2.1");
+    expect(health[0]?.features?.liveSettlement).toBe(true);
+    expect(health[0]?.profile?.metadata?.region).toBe("us-east-1");
     expect(health[0]?.compatibility?.supportedVersions?.[0]).toBe("^0.2.0");
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/compute/backends/health");
@@ -346,6 +352,8 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
     }
     expect(health.backends[0]?.domain).toBe("dev");
     expect(health.backends[0]?.profile?.credentialType).toBe("bearer");
+    expect(health.backends[0]?.features?.runtimeVersion).toBe("0.2.0");
+    expect(health.backends[0]?.features?.compatibilityChecks).toBe(true);
     expect(health.backends[0]?.compatibility?.currentVersion).toBe("0.2.0");
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/dev/backends/health");

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import type {
+  AdapterHealthSummary,
   ExternalZKProveRequest,
   ExternalZKProveResponse,
   ExternalZKVerifyRequest,
   ExternalZKVerifyResponse,
+  ManagedBackendHealthSummary,
+  ManagedBackendHealthReport,
   ManagedBackendInventory,
   ManagedBackendQueueAdapter,
   ManagedBackendStoreAdapter,
@@ -68,6 +71,33 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
         store,
       },
     };
+    const health: ManagedBackendHealthReport = {
+      name: "compute-queue-backend",
+      domain: "compute",
+      capability: "queue",
+      mode: "remote",
+      state: "healthy",
+      checkedAt: 1_700_000_000_100,
+      durability: "remote",
+      features: {
+        executionCheckpoints: true,
+        liveSettlement: true,
+        runtimeVersion: "0.2.1",
+      },
+    };
+    const adapterSummary: AdapterHealthSummary = {
+      status: "healthy",
+      checkedAt: 1_700_000_000_100,
+      runtimeVersion: "0.2.1",
+      adapters: [health],
+    };
+    const backendSummary: ManagedBackendHealthSummary = {
+      status: "healthy",
+      checkedAt: 1_700_000_000_100,
+      runtimeVersion: "0.2.1",
+      adapters: [health],
+      backends: [health],
+    };
 
     const receipt = await inventory.compute?.queue?.enqueue({
       id: "job-1",
@@ -78,6 +108,10 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
 
     expect(receipt?.state).toBe("queued");
     expect(trace.attributes?.queuedMessages).toBe(1);
+    expect(adapterSummary.runtimeVersion).toBe("0.2.1");
+    expect(backendSummary.runtimeVersion).toBe("0.2.1");
+    expect(health.features?.executionCheckpoints).toBe(true);
+    expect(health.features?.runtimeVersion).toBe("0.2.1");
     expect((await store.get("checkpoint-1"))?.value.status).toBe("ok");
   });
 
@@ -143,10 +177,10 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
       toAddress: "0x2222222222222222222222222222222222222222",
     };
     const stablecoinBridge = {
-      getHealth() {
+      async getHealth() {
         return health;
       },
-      resetHealth() {
+      async resetHealth() {
         return;
       },
       async hasExternalReference(externalReference: string) {
@@ -190,28 +224,28 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
       },
     };
     const provider: OnchainFinalityProvider = {
-      trackTransaction() {
+      async trackTransaction() {
         return tx;
       },
-      recordTransactionInclusion() {
+      async recordTransactionInclusion() {
         return tx;
       },
-      recordCanonicalBlock() {},
-      advanceHead() {
+      async recordCanonicalBlock() {},
+      async advanceHead() {
         return event.summary;
       },
-      getTransaction() {
+      async getTransaction() {
         return tx;
       },
-      listTransactions() {
+      async listTransactions() {
         return { items: [tx] };
       },
-      getSummary() {
+      async getSummary() {
         return event.summary;
       },
     };
     const signer: TransactionSigner = {
-      getAddress() {
+      async getAddress() {
         return "0x1111111111111111111111111111111111111111";
       },
       async signTransaction(payload: UnsignedSerializedTransaction) {
@@ -267,14 +301,18 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
       adapterReceiptId: "adapter-verify-1",
       details: { manifestVersion: manifest.manifestVersion },
     };
+    const connectorHealth = await stablecoinBridge.getHealth();
     const stablecoinResult = await stablecoinBridge.submitStablecoinTransfer(stablecoinRequest);
+    const providerSummary = await provider.getSummary();
+    const signerAddress = await signer.getAddress();
 
-    expect(health.profile?.credentialType).toBe("bearer");
+    expect(connectorHealth.profile?.credentialType).toBe("bearer");
     expect(transportRequest.connector).toBe("llm_token_metering");
     expect(transportResponse.status).toBe(201);
     expect(stablecoinResult.transactionHash).toBe("0xtx-1");
     expect(stablecoinResult.chainId).toBe(1);
-    expect(provider.getSummary().trackedTransactionCount).toBe(1);
+    expect(providerSummary.trackedTransactionCount).toBe(1);
+    expect(signerAddress).toBe("0x1111111111111111111111111111111111111111");
     expect(await signer.signTransaction({ to: tx.txId, data: "0x1234", nonce: 0 })).toContain("0x1234");
     expect(proveResponse.adapterReceiptId).toBe("adapter-1");
     expect(verifyResponse.details?.manifestVersion).toBe("1.0.0");

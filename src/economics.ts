@@ -1,3 +1,5 @@
+import type { AdapterCompatibilityReport, AdapterDurability } from "./types";
+
 export type CompensationAssetKind =
   | "usdc"
   | "stablecoin"
@@ -131,8 +133,10 @@ export interface SettlementConnectorProfileSummary {
   providerId: string;
   displayName?: string;
   endpoint?: string;
+  timeoutMs?: number;
   credentialType: SettlementConnectorCredentialType;
   configuredCredentialFields: string[];
+  metadata?: Record<string, string>;
 }
 
 export interface SettlementConnectorRequest {
@@ -282,7 +286,13 @@ export interface SettlementConnectorFailure {
 }
 
 export interface SettlementConnectorHealth {
+  adapter?: string;
   state: SettlementConnectorHealthState;
+  checkedAt?: number;
+  durable?: boolean;
+  durability?: AdapterDurability;
+  features?: Record<string, string | number | boolean>;
+  compatibility?: AdapterCompatibilityReport;
   retryPolicy: SettlementConnectorRetryPolicy;
   circuitBreaker: SettlementConnectorCircuitBreakerPolicy;
   timeoutMs: number;
@@ -299,8 +309,8 @@ export interface ConnectorHealthReport extends SettlementConnectorHealth {
 }
 
 export interface ManagedSettlementConnector {
-  getHealth(): SettlementConnectorHealth;
-  resetHealth(): void;
+  getHealth(): SettlementConnectorHealth | Promise<SettlementConnectorHealth>;
+  resetHealth(): void | Promise<void>;
   hasExternalReference(externalReference: string): Promise<boolean>;
 }
 

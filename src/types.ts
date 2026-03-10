@@ -115,8 +115,11 @@ export interface AdapterHealthReport {
 export interface AdapterHealthSummary {
   status: AdapterHealthState;
   checkedAt: number;
+  runtimeVersion?: string;
   adapters: AdapterHealthReport[];
 }
+
+export type AdapterFeatureMap = Record<string, string | number | boolean>;
 
 export type ManagedBackendDomain = "data" | "compute" | "dev";
 
@@ -164,10 +167,18 @@ export interface ManagedBackendProfileSummary {
   metadata?: Record<string, string>;
 }
 
+export type ManagedBackendFeatureFlags = AdapterFeatureMap & {
+  runtimeVersion?: string;
+  executionCheckpoints?: boolean;
+  liveSettlement?: boolean;
+  compatibilityChecks?: boolean;
+};
+
 export interface ManagedBackendHealthReport extends AdapterHealthReport {
   domain: ManagedBackendDomain;
   capability: ManagedBackendCapability;
   mode: ManagedBackendMode;
+  features?: ManagedBackendFeatureFlags;
   profile?: ManagedBackendProfileSummary;
 }
 
@@ -2092,13 +2103,22 @@ export interface OnchainIndexerHookEvent {
 export type OnchainIndexerHook = (event: OnchainIndexerHookEvent) => void | Promise<void>;
 
 export interface OnchainFinalityProvider {
-  trackTransaction(input: TrackOnchainTransactionInput): OnchainTransactionRecord;
-  recordTransactionInclusion(input: RecordOnchainTransactionInclusionInput): OnchainTransactionRecord;
-  recordCanonicalBlock(input: RecordCanonicalBlockInput): void;
-  advanceHead(blockNumber: number, blockHash?: string): OnchainFinalitySummary;
-  getTransaction(txId: string): OnchainTransactionRecord | undefined;
-  listTransactions(query?: OnchainTransactionQuery): OnchainTransactionPage;
-  getSummary(): OnchainFinalitySummary;
+  trackTransaction(
+    input: TrackOnchainTransactionInput,
+  ): OnchainTransactionRecord | Promise<OnchainTransactionRecord>;
+  recordTransactionInclusion(
+    input: RecordOnchainTransactionInclusionInput,
+  ): OnchainTransactionRecord | Promise<OnchainTransactionRecord>;
+  recordCanonicalBlock(input: RecordCanonicalBlockInput): void | Promise<void>;
+  advanceHead(
+    blockNumber: number,
+    blockHash?: string,
+  ): OnchainFinalitySummary | Promise<OnchainFinalitySummary>;
+  getTransaction(
+    txId: string,
+  ): OnchainTransactionRecord | undefined | Promise<OnchainTransactionRecord | undefined>;
+  listTransactions(query?: OnchainTransactionQuery): OnchainTransactionPage | Promise<OnchainTransactionPage>;
+  getSummary(): OnchainFinalitySummary | Promise<OnchainFinalitySummary>;
 }
 
 export interface UnsignedSerializedTransaction {
@@ -2108,7 +2128,7 @@ export interface UnsignedSerializedTransaction {
 }
 
 export interface TransactionSigner {
-  getAddress(): string;
+  getAddress(): string | Promise<string>;
   signTransaction(payload: UnsignedSerializedTransaction): Promise<string>;
 }
 
