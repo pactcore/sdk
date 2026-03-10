@@ -369,6 +369,8 @@ describe("Type parity contracts", () => {
     const stablecoinResult = await connectors.stablecoinBridge.submitStablecoinTransfer(
       stablecoinRequest,
     );
+    const llmHealth = connectors.llmTokenMetering.getHealth();
+    const stablecoinHealth = await connectors.stablecoinBridge.getHealth();
 
     expect(response.status).toBe(200);
     expect(result.status).toBe("applied");
@@ -378,8 +380,8 @@ describe("Type parity contracts", () => {
     expect(stablecoinResult.status).toBe("applied");
     expect(stablecoinResult.transactionHash).toBe("0xtx-1");
     expect(stablecoinResult.chainId).toBe(1);
-    expect(connectors.llmTokenMetering.getHealth().features?.runtimeVersion).toBe("0.2.1");
-    expect(connectors.stablecoinBridge.getHealth().profile?.metadata?.network).toBe("ethereum");
+    expect(llmHealth.features?.runtimeVersion).toBe("0.2.1");
+    expect(stablecoinHealth.profile?.metadata?.network).toBe("ethereum");
     expect(await connectors.llmTokenMetering.hasExternalReference("ext-1")).toBe(true);
     expect(await connectors.stablecoinBridge.hasExternalReference("0xtx-1")).toBe(true);
   });
