@@ -271,6 +271,7 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
                     endpoint: "https://queue.example",
                     timeoutMs: 2000,
                     credentialType: "api_key",
+                    requiredCredentialFields: ["apiKey"],
                     configuredCredentialFields: ["token"],
                     metadata: { region: "us-east-1" },
                 },
@@ -282,6 +283,7 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
             throw new Error("expected list payload");
         }
         expect(health[0]?.profile?.credentialType).toBe("api_key");
+        expect(health[0]?.profile?.requiredCredentialFields).toEqual(["apiKey"]);
         expect(health[0]?.features?.runtimeVersion).toBe("0.2.1");
         expect(health[0]?.features?.liveSettlement).toBe(true);
         expect(health[0]?.profile?.metadata?.region).toBe("us-east-1");
@@ -338,6 +340,7 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
                         backendId: "dev_obs_1",
                         providerId: "managed-dev",
                         credentialType: "bearer",
+                        requiredCredentialFields: ["token"],
                         configuredCredentialFields: ["token"],
                     },
                 },
@@ -350,6 +353,7 @@ describe("PactSdk - Batch 36 - Managed backends", () => {
         }
         expect(health.backends[0]?.domain).toBe("dev");
         expect(health.backends[0]?.profile?.credentialType).toBe("bearer");
+        expect(health.backends[0]?.profile?.requiredCredentialFields).toEqual(["token"]);
         expect(health.backends[0]?.features?.runtimeVersion).toBe("0.2.0");
         expect(health.backends[0]?.features?.compatibilityChecks).toBe(true);
         expect(health.backends[0]?.compatibility?.currentVersion).toBe("0.2.0");

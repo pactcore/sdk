@@ -167,6 +167,7 @@ export interface ManagedBackendProfileSummary {
   endpoint?: string;
   timeoutMs?: number;
   credentialType: ManagedBackendCredentialType;
+  requiredCredentialFields: string[];
   configuredCredentialFields: string[];
   metadata?: Record<string, string>;
 }

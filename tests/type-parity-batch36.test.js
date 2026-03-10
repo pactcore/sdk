@@ -53,6 +53,13 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
             state: "healthy",
             checkedAt: 1_700_000_000_100,
             durability: "remote",
+            profile: {
+                backendId: "compute-queue-backend",
+                providerId: "managed-compute",
+                credentialType: "bearer",
+                requiredCredentialFields: ["token"],
+                configuredCredentialFields: ["token"],
+            },
             features: {
                 executionCheckpoints: true,
                 liveSettlement: true,
@@ -83,6 +90,7 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
         expect(trace.attributes?.queuedMessages).toBe(1);
         expect(adapterSummary.runtimeVersion).toBe("0.2.1");
         expect(backendSummary.runtimeVersion).toBe("0.2.1");
+        expect(health.profile?.requiredCredentialFields).toEqual(["token"]);
         expect(health.features?.executionCheckpoints).toBe(true);
         expect(health.features?.runtimeVersion).toBe("0.2.1");
         expect(health.features?.supportedQueues).toEqual(["priority", "scheduled"]);

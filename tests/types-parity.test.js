@@ -58,6 +58,13 @@ describe("Type parity contracts", () => {
         mode: "local",
         state: "healthy",
         checkedAt: 1700000000100,
+        profile: {
+            backendId: "dev-observability-backend",
+            providerId: "managed-dev",
+            credentialType: "bearer",
+            requiredCredentialFields: ["token"],
+            configuredCredentialFields: ["token"],
+        },
         features: {
             compatibilityChecks: true,
             runtimeVersion: "0.2.0",
@@ -72,6 +79,7 @@ describe("Type parity contracts", () => {
     expect(receipt?.state).toBe("queued");
     expect(health.features?.compatibilityChecks).toBe(true);
     expect(health.features?.runtimeVersion).toBe("0.2.0");
+    expect(health.profile?.requiredCredentialFields).toEqual(["token"]);
     expect((await inventory.data?.store?.get("artifact-1"))?.etag).toBe("etag-1");
   });
     it("models dev integration health adapter surfaces", () => {
