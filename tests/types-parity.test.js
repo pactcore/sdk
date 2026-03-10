@@ -188,7 +188,26 @@ describe("Type parity contracts", () => {
             stablecoinBridge: {
                 async getHealth() {
                     return {
+                        adapter: "stablecoin-mainnet-bridge",
                         state: "closed",
+                        checkedAt: 1700000000000,
+                        durable: true,
+                        durability: "remote",
+                        features: { liveSettlement: true, onchainFinality: true },
+                        compatibility: {
+                            compatible: true,
+                            currentVersion: "0.2.1",
+                            supportedVersions: ["^0.2.0"],
+                        },
+                        profile: {
+                            profileId: "mainnet-usdc",
+                            providerId: "circle",
+                            endpoint: "https://settlement.example/bridge",
+                            timeoutMs: 5000,
+                            credentialType: "api_key",
+                            configuredCredentialFields: ["token"],
+                            metadata: { network: "ethereum" },
+                        },
                         retryPolicy: { maxRetries: 3, backoffMs: 1000 },
                         circuitBreaker: { failureThreshold: 5, cooldownMs: 60000 },
                         timeoutMs: 5000,
@@ -218,7 +237,17 @@ describe("Type parity contracts", () => {
             llmTokenMetering: {
                 getHealth() {
                     return {
+                        adapter: "llm-live-connector",
                         state: "closed",
+                        checkedAt: 1700000000000,
+                        durable: true,
+                        durability: "remote",
+                        features: { liveSettlement: true, runtimeVersion: "0.2.1" },
+                        compatibility: {
+                            compatible: true,
+                            currentVersion: "0.2.1",
+                            supportedVersions: ["^0.2.0"],
+                        },
                         retryPolicy: { maxRetries: 3, backoffMs: 1000 },
                         circuitBreaker: { failureThreshold: 5, cooldownMs: 60000 },
                         timeoutMs: 5000,
@@ -309,6 +338,8 @@ describe("Type parity contracts", () => {
         expect(stablecoinResult.status).toBe("applied");
         expect(stablecoinResult.transactionHash).toBe("0xtx-1");
         expect(stablecoinResult.chainId).toBe(1);
+        expect(connectors.llmTokenMetering.getHealth().features?.runtimeVersion).toBe("0.2.1");
+        expect(connectors.stablecoinBridge.getHealth().profile?.metadata?.network).toBe("ethereum");
         expect(await connectors.llmTokenMetering.hasExternalReference("ext-1")).toBe(true);
         expect(await connectors.stablecoinBridge.hasExternalReference("0xtx-1")).toBe(true);
     });
