@@ -52,7 +52,106 @@ export interface ReferenceAssetQuote {
 export interface SettlementLine {
   assetId: string;
   amount: number;
-  rail: "onchain_stablecoin" | "llm_metering" | "cloud_billing" | "api_quota" | "custom";
+  rail: SettlementRail;
+}
+
+export type SettlementRail =
+  | "onchain_stablecoin"
+  | "llm_metering"
+  | "cloud_billing"
+  | "api_quota"
+  | "custom";
+
+export type SettlementConnector =
+  | "stablecoin_bridge"
+  | "llm_token_metering"
+  | "cloud_credit_billing"
+  | "api_quota_allocation";
+
+export type SettlementConnectorKind = Exclude<SettlementConnector, "stablecoin_bridge">;
+
+export type SettlementConnectorOperation =
+  | "apply_metering_credit"
+  | "apply_billing_credit"
+  | "allocate_quota";
+
+export type SettlementConnectorCredentialType =
+  | "none"
+  | "api_key"
+  | "bearer"
+  | "basic"
+  | "oauth2"
+  | "service_account";
+
+export interface SettlementConnectorCredentialFieldSchema {
+  key: string;
+  required?: boolean;
+  secret?: boolean;
+}
+
+export interface SettlementConnectorCredentialSchema {
+  type: SettlementConnectorCredentialType;
+  fields: SettlementConnectorCredentialFieldSchema[];
+}
+
+export interface SettlementConnectorProviderProfile {
+  id: string;
+  providerId: string;
+  displayName?: string;
+  endpoint?: string;
+  timeoutMs?: number;
+  credentialSchema: SettlementConnectorCredentialSchema;
+  credentials: Record<string, string>;
+  metadata?: Record<string, string>;
+}
+
+export interface SettlementConnectorTransportRequest {
+  connector: SettlementConnectorKind;
+  operation: SettlementConnectorOperation;
+  method: "POST";
+  url: string;
+  headers: Record<string, string>;
+  body: string;
+  timeoutMs: number;
+}
+
+export interface SettlementConnectorTransportResponse {
+  status: number;
+  body?: unknown;
+  headers?: Record<string, string>;
+}
+
+export interface SettlementConnectorTransport {
+  send(request: SettlementConnectorTransportRequest): Promise<SettlementConnectorTransportResponse>;
+}
+
+export interface SettlementConnectorProfileSummary {
+  profileId: string;
+  providerId: string;
+  displayName?: string;
+  endpoint?: string;
+  credentialType: SettlementConnectorCredentialType;
+  configuredCredentialFields: string[];
+}
+
+export interface SettlementConnectorRequest {
+  settlementId: string;
+  recordId: string;
+  assetId: string;
+  amount: number;
+  unit: string;
+  payerId: string;
+  payeeId: string;
+  externalReference: string;
+  idempotencyKey?: string;
+  connectorMetadata?: Record<string, string>;
+}
+
+export interface SettlementConnectorResult {
+  externalReference: string;
+  appliedAt: number;
+  idempotencyKey?: string;
+  connectorMetadata?: Record<string, string>;
 }
 
 export interface SettlementExecutionRequest {
@@ -66,8 +165,8 @@ export interface SettlementRecord {
   settlementId: string;
   legId: string;
   assetId: string;
-  rail: "llm_metering" | "cloud_billing" | "api_quota";
-  connector: "llm_token_metering" | "cloud_credit_billing" | "api_quota_allocation";
+  rail: SettlementRail;
+  connector: SettlementConnector;
   payerId: string;
   payeeId: string;
   amount: number;
@@ -141,6 +240,8 @@ export type SettlementConnectorHealthState = "open" | "half_open" | "closed";
 export interface SettlementConnectorRetryPolicy {
   maxRetries: number;
   backoffMs: number;
+  backoffStrategy?: "linear" | "exponential";
+  maxBackoffMs?: number;
 }
 
 export interface SettlementConnectorCircuitBreakerPolicy {
@@ -161,22 +262,48 @@ export interface SettlementConnectorHealth {
   state: SettlementConnectorHealthState;
   retryPolicy: SettlementConnectorRetryPolicy;
   circuitBreaker: SettlementConnectorCircuitBreakerPolicy;
+  timeoutMs: number;
   consecutiveFailures: number;
   lastFailureAt?: number;
   lastError?: string;
   lastFailure?: SettlementConnectorFailure;
+  profile?: SettlementConnectorProfileSummary;
 }
 
 export interface ConnectorHealthReport extends SettlementConnectorHealth {
-  connector: SettlementRecord["connector"];
-  rail: SettlementRecord["rail"];
+  connector: SettlementConnector;
+  rail: SettlementRail;
+}
+
+export interface ManagedSettlementConnector {
+  getHealth(): SettlementConnectorHealth;
+  resetHealth(): void;
+  hasExternalReference(externalReference: string): Promise<boolean>;
+}
+
+export interface LlmTokenMeteringConnector extends ManagedSettlementConnector {
+  applyMeteringCredit(input: SettlementConnectorRequest): Promise<SettlementConnectorResult>;
+}
+
+export interface CloudCreditBillingConnector extends ManagedSettlementConnector {
+  applyBillingCredit(input: SettlementConnectorRequest): Promise<SettlementConnectorResult>;
+}
+
+export interface ApiQuotaAllocationConnector extends ManagedSettlementConnector {
+  allocateQuota(input: SettlementConnectorRequest): Promise<SettlementConnectorResult>;
+}
+
+export interface SettlementConnectors {
+  llmTokenMetering: LlmTokenMeteringConnector;
+  cloudCreditBilling: CloudCreditBillingConnector;
+  apiQuotaAllocation: ApiQuotaAllocationConnector;
 }
 
 export type ReconciliationQueueState = "pending" | "failed" | "all";
 
 export interface ReconciliationQueueRequest {
   state?: ReconciliationQueueState;
-  connector?: SettlementRecord["connector"];
+  connector?: SettlementConnector;
   settlementId?: string;
   idempotencyKey?: string;
   cursor?: string;
@@ -190,7 +317,7 @@ export interface ReconciliationQueueItem {
   pendingRecordCount: number;
   failedRecordCount: number;
   recordIds: string[];
-  connectors: SettlementRecord["connector"][];
+  connectors: SettlementConnector[];
   oldestCreatedAt: number;
   updatedAt: number;
   lastError?: string;
@@ -208,7 +335,7 @@ export interface UnreconciledSettlementView {
   settlementId: string;
   pendingRecordCount: number;
   recordIds: string[];
-  connectors: SettlementRecord["connector"][];
+  connectors: SettlementConnector[];
   oldestCreatedAt: number;
   records: SettlementRecord[];
 }
@@ -434,7 +561,7 @@ export function buildReconciliationQueueQueryParams(input: ReconciliationQueueRe
   return suffix.length > 0 ? `?${suffix}` : "";
 }
 
-function settlementRailForKind(kind: CompensationAssetKind): SettlementLine["rail"] {
+function settlementRailForKind(kind: CompensationAssetKind): SettlementRail {
   switch (kind) {
     case "usdc":
     case "stablecoin":

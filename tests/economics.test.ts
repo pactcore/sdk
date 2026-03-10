@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
+  type LlmTokenMeteringConnector,
+  type SettlementConnectorRequest,
   buildReconciliationQueueQueryParams,
   buildCompensationModel,
   summarizeCompensationByAsset,
@@ -180,5 +182,58 @@ describe("SDK economics helpers", () => {
     expect(query).toBe(
       "?state=failed&connector=llm_token_metering&settlementId=settlement-1&idempotencyKey=idem-1&cursor=1&limit=25",
     );
+  });
+
+  it("builds reconciliation queue query params for stablecoin bridge records", () => {
+    const query = buildReconciliationQueueQueryParams({
+      state: "pending",
+      connector: "stablecoin_bridge",
+      settlementId: "settlement-onchain-1",
+      idempotencyKey: "idem-onchain-1",
+      cursor: "3",
+      limit: 10,
+    });
+
+    expect(query).toBe(
+      "?state=pending&connector=stablecoin_bridge&settlementId=settlement-onchain-1&idempotencyKey=idem-onchain-1&cursor=3&limit=10",
+    );
+  });
+
+  it("supports managed settlement connector request/result contracts", async () => {
+    const connector: LlmTokenMeteringConnector = {
+      getHealth: () => ({
+        state: "closed",
+        retryPolicy: { maxRetries: 3, backoffMs: 250 },
+        circuitBreaker: { failureThreshold: 5, cooldownMs: 1000 },
+        timeoutMs: 2000,
+        consecutiveFailures: 0,
+      }),
+      resetHealth: () => {},
+      hasExternalReference: async (externalReference) => externalReference === "metering-1",
+      applyMeteringCredit: async (input) => ({
+        externalReference: `metering:${input.idempotencyKey}`,
+        appliedAt: 1700000000000,
+        connectorMetadata: input.metadata,
+      }),
+    };
+
+    const request: SettlementConnectorRequest = {
+      settlementId: "settlement-1",
+      recordId: "record-1",
+      assetId: "llm-gpt5",
+      payerId: "issuer-1",
+      payeeId: "worker-1",
+      amount: 42000,
+      unit: "token",
+      externalReference: "metering-1",
+      idempotencyKey: "idem-connector-1",
+      connectorMetadata: { provider: "gpt5" },
+    };
+
+    const result = await connector.applyMeteringCredit(request);
+
+    expect(result.externalReference).toBe("metering-1");
+    expect(result.connectorMetadata?.provider).toBe("gpt5");
+    expect(await connector.hasExternalReference("metering-1")).toBe(true);
   });
 });

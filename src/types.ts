@@ -175,6 +175,119 @@ export interface ManagedBackendHealthSummary extends AdapterHealthSummary {
   backends: ManagedBackendHealthReport[];
 }
 
+export interface ManagedQueueMessage<TPayload = unknown> {
+  id: string;
+  topic: string;
+  payload: TPayload;
+  createdAt: number;
+  runAt?: number;
+  priority?: number;
+  metadata?: Record<string, string>;
+}
+
+export interface ManagedQueueReceipt {
+  messageId: string;
+  backendMessageId: string;
+  acceptedAt: number;
+  state: "accepted" | "queued" | "scheduled";
+  metadata?: Record<string, string>;
+}
+
+export interface ManagedQueueDepth {
+  available: number;
+  inFlight?: number;
+  scheduled?: number;
+  deadLetter?: number;
+}
+
+export interface ManagedStoreRecord<TValue = unknown> {
+  key: string;
+  value: TValue;
+  updatedAt: number;
+  etag?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface ManagedStorePutOptions {
+  expectedEtag?: string;
+}
+
+export interface ManagedStoreQuery {
+  prefix?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ManagedStorePage<TValue = unknown> {
+  items: ManagedStoreRecord<TValue>[];
+  nextCursor?: string;
+}
+
+export interface ManagedMetricRecord {
+  name: string;
+  type: "counter" | "gauge" | "histogram";
+  value: number;
+  recordedAt: number;
+  labels?: Record<string, string>;
+  description?: string;
+}
+
+export interface ManagedTraceRecord {
+  traceId: string;
+  spanId: string;
+  name: string;
+  startedAt: number;
+  endedAt?: number;
+  status?: "ok" | "error";
+  attributes?: Record<string, string | number | boolean>;
+}
+
+export interface ManagedBackendAdapter {
+  readonly domain: ManagedBackendDomain;
+  readonly capability: ManagedBackendCapability;
+  readonly mode: ManagedBackendMode;
+  readonly durability?: AdapterDurability;
+  getHealth?(): Promise<AdapterHealthReport> | AdapterHealthReport;
+  getManagedHealth?(): Promise<ManagedBackendHealthReport> | ManagedBackendHealthReport;
+}
+
+export interface ManagedBackendQueueAdapter<TPayload = unknown> extends ManagedBackendAdapter {
+  readonly capability: "queue";
+  enqueue(message: ManagedQueueMessage<TPayload>): Promise<ManagedQueueReceipt>;
+  getDepth?(): Promise<ManagedQueueDepth> | ManagedQueueDepth;
+}
+
+export interface ManagedBackendStoreAdapter<TValue = unknown> extends ManagedBackendAdapter {
+  readonly capability: "store";
+  put(record: ManagedStoreRecord<TValue>, options?: ManagedStorePutOptions): Promise<void>;
+  get(key: string): Promise<ManagedStoreRecord<TValue> | undefined>;
+  list?(query?: ManagedStoreQuery): Promise<ManagedStorePage<TValue>>;
+  delete?(key: string): Promise<boolean>;
+}
+
+export interface ManagedBackendObservabilityAdapter extends ManagedBackendAdapter {
+  readonly capability: "observability";
+  recordMetric(record: ManagedMetricRecord): Promise<void>;
+  recordTrace(record: ManagedTraceRecord): Promise<void>;
+  flush?(): Promise<void>;
+}
+
+export interface ManagedBackendSuite {
+  queue?: ManagedBackendQueueAdapter;
+  store?: ManagedBackendStoreAdapter;
+  observability?: ManagedBackendObservabilityAdapter;
+}
+
+export interface ManagedBackendInventory {
+  data?: Partial<ManagedBackendSuite>;
+  compute?: Partial<ManagedBackendSuite>;
+  dev?: Partial<ManagedBackendSuite>;
+}
+
+export type DataManagedBackendSuite = ManagedBackendSuite;
+export type ComputeManagedBackendSuite = ManagedBackendSuite;
+export type DevManagedBackendSuite = ManagedBackendSuite;
+
 export type AdapterHealthResponse = AdapterHealthSummary | AdapterHealthReport[];
 
 export type ManagedBackendHealthResponse =
@@ -701,20 +814,28 @@ export type ZKArtifactRole =
   | "srs"
   | "metadata";
 
+export type ZKIntegrityAlgorithm = "sha256";
+
+export type ZKArtifactSource = "inline" | "local" | "remote";
+
 export interface ZKArtifactDescriptor {
   role: ZKArtifactRole;
   uri: string;
   version: string;
   integrity: string;
+  integrityAlgorithm?: ZKIntegrityAlgorithm;
+  source?: ZKArtifactSource;
   bytes?: number;
   inlineData?: string;
 }
 
 export interface ZKArtifactManifest {
   id: string;
+  schemaVersion?: string;
   proofType: ZKProofType;
   manifestVersion: string;
   runtimeVersion: string;
+  integrityAlgorithm?: ZKIntegrityAlgorithm;
   circuit: {
     name: string;
     version: string;
@@ -722,7 +843,64 @@ export interface ZKArtifactManifest {
   };
   artifacts: ZKArtifactDescriptor[];
   createdAt: number;
+  publishedAt?: number;
+  artifactCount?: number;
   manifestIntegrity: string;
+}
+
+export interface ZKBridgeRuntimeInfo {
+  adapter: string;
+  runtimeVersion: string;
+  durability: AdapterDurability;
+  manifestCatalog: {
+    schemaVersions: string[];
+    manifestsByType: Partial<Record<ZKProofType, string[]>>;
+  };
+  features: {
+    manifestVersioning: boolean;
+    artifactIntegrity: boolean;
+    receiptTraceability: boolean;
+    deterministicLocalAdapter: boolean;
+    remoteAdapterSkeleton: boolean;
+  };
+}
+
+export interface ExternalZKProveRequest {
+  requestId: string;
+  traceId: string;
+  proofType: ZKProofType;
+  proverId: string;
+  challenge: string;
+  publicInputs: Record<string, unknown>;
+  witness: unknown;
+  createdAt: number;
+  manifest: ZKArtifactManifest;
+}
+
+export interface ExternalZKProveResponse {
+  commitment: string;
+  proof: string;
+  traceId?: string;
+  adapterReceiptId?: string;
+}
+
+export interface ExternalZKVerifyRequest {
+  traceId: string;
+  proofId: string;
+  proofType: ZKProofType;
+  proverId: string;
+  commitment: string;
+  proof: string;
+  publicInputs: Record<string, unknown>;
+  createdAt: number;
+  manifest: ZKArtifactManifest;
+}
+
+export interface ExternalZKVerifyResponse {
+  verified: boolean;
+  traceId?: string;
+  adapterReceiptId?: string;
+  details?: Record<string, string>;
 }
 
 export interface ZKVerificationReceipt {
@@ -742,6 +920,19 @@ export interface ZKVerificationReceipt {
   checkedAt: number;
 }
 
+export interface ZKProofBridgeMetadata {
+  adapter: string;
+  manifestId: string;
+  manifestVersion: string;
+  manifestIntegrity: string;
+  manifestSchemaVersion?: string;
+  runtimeVersion?: string;
+  traceId: string;
+  proofDigest: string;
+  publicInputsDigest?: string;
+  adapterReceiptId?: string;
+}
+
 export interface ZKProof {
   id: string;
   type: ZKProofType;
@@ -751,6 +942,7 @@ export interface ZKProof {
   proof: string;
   verified: boolean;
   createdAt: number;
+  bridge?: ZKProofBridgeMetadata;
 }
 
 export interface ZKLocationClaim {
@@ -1866,6 +2058,58 @@ export interface OnchainFinalitySummary {
   headBlockNumber?: number;
   confirmationDepth: number;
   finalityDepth: number;
+}
+
+export interface TrackOnchainTransactionInput {
+  txId: string;
+  operation: OnchainTransactionOperation;
+  submittedAt?: number;
+  participantId?: string;
+  proposalId?: string;
+  epoch?: number;
+  referenceId?: string;
+}
+
+export interface RecordOnchainTransactionInclusionInput {
+  txId: string;
+  blockNumber: number;
+  blockHash: string;
+  includedAt?: number;
+}
+
+export interface RecordCanonicalBlockInput {
+  blockNumber: number;
+  blockHash: string;
+}
+
+export interface OnchainIndexerHookEvent {
+  kind: "tracked" | "included" | "status_changed" | "reorged" | "finalized";
+  transaction: OnchainTransactionRecord;
+  previousTransaction?: OnchainTransactionRecord;
+  summary: OnchainFinalitySummary;
+}
+
+export type OnchainIndexerHook = (event: OnchainIndexerHookEvent) => void | Promise<void>;
+
+export interface OnchainFinalityProvider {
+  trackTransaction(input: TrackOnchainTransactionInput): OnchainTransactionRecord;
+  recordTransactionInclusion(input: RecordOnchainTransactionInclusionInput): OnchainTransactionRecord;
+  recordCanonicalBlock(input: RecordCanonicalBlockInput): void;
+  advanceHead(blockNumber: number, blockHash?: string): OnchainFinalitySummary;
+  getTransaction(txId: string): OnchainTransactionRecord | undefined;
+  listTransactions(query?: OnchainTransactionQuery): OnchainTransactionPage;
+  getSummary(): OnchainFinalitySummary;
+}
+
+export interface UnsignedSerializedTransaction {
+  to: string;
+  data: string;
+  nonce: number;
+}
+
+export interface TransactionSigner {
+  getAddress(): string;
+  signTransaction(payload: UnsignedSerializedTransaction): Promise<string>;
 }
 
 // ── Batch 8: Token economics route types ───────────────────────

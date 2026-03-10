@@ -84,6 +84,99 @@ describe("PactSdk - Batch 36 - Appendix C", () => {
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/zk/proofs/zk_1/receipts");
   });
+
+  it("getZKBridgeRuntime -> GET /zk/bridge/runtime", async () => {
+    const { sdk, captured } = createMockSdk({
+      adapter: "appendix-c-adapter",
+      runtimeVersion: "0.2.0",
+      durability: "remote",
+      manifestCatalog: {
+        schemaVersions: ["1.0.0"],
+        manifestsByType: {
+          identity: ["1.0.0"],
+        },
+      },
+      features: {
+        manifestVersioning: true,
+        artifactIntegrity: true,
+        receiptTraceability: true,
+        deterministicLocalAdapter: false,
+        remoteAdapterSkeleton: true,
+      },
+    });
+
+    const runtime = await sdk.getZKBridgeRuntime();
+
+    expect(runtime.adapter).toBe("appendix-c-adapter");
+    expect(runtime.manifestCatalog.manifestsByType.identity?.[0]).toBe("1.0.0");
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/zk/bridge/runtime");
+  });
+
+  it("listZKArtifactManifests -> GET /zk/manifests with optional type", async () => {
+    const { sdk, captured } = createMockSdk([
+      {
+        id: "manifest_1",
+        schemaVersion: "1.0.0",
+        proofType: "identity",
+        manifestVersion: "1.0.0",
+        runtimeVersion: "0.2.0",
+        integrityAlgorithm: "sha256",
+        circuit: {
+          name: "identity-proof",
+          version: "1.0.0",
+          provingSystem: "groth16",
+        },
+        artifacts: [],
+        createdAt: 1700000000000,
+        publishedAt: 1700000001000,
+        artifactCount: 0,
+        manifestIntegrity: "sha256:manifest",
+      },
+    ]);
+
+    const manifests = await sdk.listZKArtifactManifests("identity");
+
+    expect(manifests).toHaveLength(1);
+    expect(manifests[0]?.schemaVersion).toBe("1.0.0");
+    expect(manifests[0]?.artifactCount).toBe(0);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/zk/manifests?type=identity");
+  });
+
+  it("getZKArtifactManifest -> GET /zk/manifests/:type with version", async () => {
+    const { sdk, captured } = createMockSdk({
+      id: "manifest_identity_1",
+      schemaVersion: "1.0.0",
+      proofType: "identity",
+      manifestVersion: "1.0.0",
+      runtimeVersion: "0.2.0",
+      circuit: {
+        name: "identity-proof",
+        version: "1.0.0",
+        provingSystem: "groth16",
+      },
+      artifacts: [
+        {
+          role: "wasm",
+          uri: "https://artifacts.pact/identity.wasm",
+          version: "1.0.0",
+          integrity: "sha256:artifact",
+          integrityAlgorithm: "sha256",
+          source: "remote",
+        },
+      ],
+      createdAt: 1700000000000,
+      manifestIntegrity: "sha256:manifest",
+    });
+
+    const manifest = await sdk.getZKArtifactManifest("identity", "1.0.0");
+
+    expect(manifest.artifacts[0]?.source).toBe("remote");
+    expect(manifest.artifacts[0]?.integrityAlgorithm).toBe("sha256");
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/zk/manifests/identity?version=1.0.0");
+  });
 });
 
 describe("PactSdk - Batch 36 - Managed backends", () => {

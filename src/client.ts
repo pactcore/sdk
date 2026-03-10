@@ -147,6 +147,8 @@ import type {
   VoteGovernanceProposalInput,
   WorkerProfile,
   X402PaymentReceipt,
+  ZKArtifactManifest,
+  ZKBridgeRuntimeInfo,
   ZKCircuitDefinition,
   ZKFormalVerificationReport,
   ZKProof,
@@ -508,6 +510,26 @@ export class PactSdk {
     return this.request<ZKVerificationReceipt[]>(
       "GET",
       `/zk/proofs/${encodeURIComponent(proofId)}/receipts`,
+    );
+  }
+
+  async getZKBridgeRuntime(): Promise<ZKBridgeRuntimeInfo> {
+    return this.request<ZKBridgeRuntimeInfo>("GET", "/zk/bridge/runtime");
+  }
+
+  async listZKArtifactManifests(type?: ZKProof["type"]): Promise<ZKArtifactManifest[]> {
+    const suffix = type ? `?type=${encodeURIComponent(type)}` : "";
+    return this.request<ZKArtifactManifest[]>("GET", `/zk/manifests${suffix}`);
+  }
+
+  async getZKArtifactManifest(
+    type: ZKProof["type"],
+    version?: string,
+  ): Promise<ZKArtifactManifest> {
+    const suffix = version ? `?version=${encodeURIComponent(version)}` : "";
+    return this.request<ZKArtifactManifest>(
+      "GET",
+      `/zk/manifests/${encodeURIComponent(type)}${suffix}`,
     );
   }
 

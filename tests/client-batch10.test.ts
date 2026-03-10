@@ -36,14 +36,30 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
         connector: "llm_token_metering",
         rail: "llm_metering",
         state: "closed",
-        retryPolicy: { maxRetries: 2, backoffMs: 1000 },
+        retryPolicy: {
+          maxRetries: 2,
+          backoffMs: 1000,
+          backoffStrategy: "exponential",
+          maxBackoffMs: 8000,
+        },
         circuitBreaker: { failureThreshold: 3, cooldownMs: 60000 },
+        timeoutMs: 1500,
         consecutiveFailures: 0,
+        profile: {
+          profileId: "openai-live",
+          providerId: "openai",
+          endpoint: "https://billing.example.test/llm",
+          credentialType: "bearer",
+          configuredCredentialFields: ["token"],
+        },
       },
     ]);
 
-    await sdk.getEconomicsConnectorHealth();
+    const health = await sdk.getEconomicsConnectorHealth();
 
+    expect(health[0]?.timeoutMs).toBe(1500);
+    expect(health[0]?.retryPolicy.backoffStrategy).toBe("exponential");
+    expect(health[0]?.profile?.providerId).toBe("openai");
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/economics/connectors/health");
   });
@@ -84,11 +100,13 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
       state: "closed",
       retryPolicy: { maxRetries: 2, backoffMs: 1000 },
       circuitBreaker: { failureThreshold: 3, cooldownMs: 60000 },
+      timeoutMs: 1500,
       consecutiveFailures: 0,
     });
 
-    await sdk.resetEconomicsConnector("llm_token_metering");
+    const health = await sdk.resetEconomicsConnector("llm_token_metering");
 
+    expect(health.timeoutMs).toBe(1500);
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe(
       "https://api.pact/economics/connectors/llm_token_metering/reset",
@@ -127,6 +145,27 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe(
       "https://api.pact/economics/reconciliation/queue?state=failed&connector=llm_token_metering&settlementId=settlement-api-failed&idempotencyKey=idem-failed-1&cursor=1&limit=10",
+    );
+  });
+
+  it("queryReconciliationQueue supports onchain stablecoin bridge filters", async () => {
+    const { sdk, captured } = createMockSdk({
+      items: [{ settlementId: "settlement-api-onchain", state: "pending" }],
+    });
+
+    const page = await sdk.queryReconciliationQueue({
+      state: "pending",
+      connector: "stablecoin_bridge",
+      settlementId: "settlement-api-onchain",
+      idempotencyKey: "idem-onchain-1",
+      cursor: "2",
+      limit: 5,
+    });
+
+    expect(page.items).toHaveLength(1);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe(
+      "https://api.pact/economics/reconciliation/queue?state=pending&connector=stablecoin_bridge&settlementId=settlement-api-onchain&idempotencyKey=idem-onchain-1&cursor=2&limit=5",
     );
   });
 
