@@ -507,9 +507,9 @@ describe("Type parity contracts", () => {
             nonce: 7,
         });
         expect(inclusion.status).toBe("confirmed");
-    expect(onchainSummary.headBlockNumber).toBe(111);
-    expect(signerAddress).toBe("0xsigner");
-    expect(signature).toBe("0xcore:7");
+        expect(onchainSummary.headBlockNumber).toBe(111);
+        expect(signerAddress).toBe("0xsigner");
+        expect(signature).toBe("0xcore:7");
     });
     it("models live onchain indexer contracts", async () => {
         const head = {
