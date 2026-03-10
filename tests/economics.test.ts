@@ -204,7 +204,17 @@ describe("SDK economics helpers", () => {
   it("supports managed settlement connector request/result contracts", async () => {
     const connector: LlmTokenMeteringConnector = {
       getHealth: () => ({
+        adapter: "live-llm-connector",
         state: "closed",
+        checkedAt: 1700000000000,
+        durable: true,
+        durability: "remote",
+        features: { liveSettlement: true, runtimeVersion: "0.2.1" },
+        compatibility: {
+          compatible: true,
+          currentVersion: "0.2.1",
+          supportedVersions: ["^0.2.0"],
+        },
         retryPolicy: { maxRetries: 3, backoffMs: 250 },
         circuitBreaker: { failureThreshold: 5, cooldownMs: 1000 },
         timeoutMs: 2000,
@@ -234,18 +244,40 @@ describe("SDK economics helpers", () => {
     };
 
     const result = await connector.applyMeteringCredit(request);
+    const connectorHealth = await connector.getHealth();
 
     expect(result.status).toBe("applied");
     expect(result.externalReference).toBe("metering:record-1");
     expect(result.processedAt).toBe(1700000000000);
     expect(result.metadata?.provider).toBe("gpt5");
+    expect(connectorHealth.features?.runtimeVersion).toBe("0.2.1");
+    expect(connectorHealth.compatibility?.supportedVersions?.[0]).toBe("^0.2.0");
     expect(await connector.hasExternalReference("metering-1")).toBe(true);
   });
 
   it("supports stablecoin bridge settlement request/result contracts", async () => {
     const connector: StablecoinBridgeConnector = {
       getHealth: () => ({
+        adapter: "mainnet-stablecoin-bridge",
         state: "closed",
+        checkedAt: 1700000000000,
+        durable: true,
+        durability: "remote",
+        features: { liveSettlement: true, onchainFinality: true },
+        compatibility: {
+          compatible: true,
+          currentVersion: "0.2.1",
+          supportedVersions: ["^0.2.0"],
+        },
+        profile: {
+          profileId: "mainnet-usdc",
+          providerId: "circle",
+          endpoint: "https://settlement.example/bridge",
+          timeoutMs: 2000,
+          credentialType: "api_key",
+          configuredCredentialFields: ["token"],
+          metadata: { network: "ethereum" },
+        },
         retryPolicy: { maxRetries: 3, backoffMs: 250 },
         circuitBreaker: { failureThreshold: 5, cooldownMs: 1000 },
         timeoutMs: 2000,
@@ -286,10 +318,13 @@ describe("SDK economics helpers", () => {
     };
 
     const result = await connector.submitStablecoinTransfer(request);
+    const connectorHealth = await connector.getHealth();
 
     expect(result.transactionHash).toBe("0xtx-1");
     expect(result.chainId).toBe(1);
     expect(result.blockNumber).toBe(123);
+    expect(connectorHealth.profile?.timeoutMs).toBe(2000);
+    expect(connectorHealth.profile?.metadata?.network).toBe("ethereum");
     expect(await connector.hasExternalReference("0xtx-1")).toBe(true);
   });
 });

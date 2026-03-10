@@ -91,6 +91,33 @@ describe("PactSdk - Compute", () => {
     expect(captured[0].method).toBe("GET");
     expect(captured[0].url).toBe("https://api.pact/compute/adapters/health");
   });
+
+  it("getComputeAdapterHealth supports summary payloads with runtimeVersion", async () => {
+    const { sdk, captured } = createMockSdk({
+      status: "healthy",
+      checkedAt: 1700000000000,
+      runtimeVersion: "0.2.1",
+      adapters: [
+        {
+          adapter: "docker",
+          state: "healthy",
+          checkedAt: 1700000000000,
+          features: { coldStarts: false },
+        },
+      ],
+    });
+
+    const health = await sdk.getComputeAdapterHealth();
+
+    expect(Array.isArray(health)).toBe(false);
+    if (Array.isArray(health)) {
+      throw new Error("expected summary payload");
+    }
+    expect(health.runtimeVersion).toBe("0.2.1");
+    expect(health.adapters[0]?.features?.coldStarts).toBe(false);
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/compute/adapters/health");
+  });
 });
 
 describe("PactSdk - Identity/DID", () => {

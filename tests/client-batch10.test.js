@@ -21,9 +21,22 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
     it("getEconomicsConnectorHealth -> GET /economics/connectors/health", async () => {
         const { sdk, captured } = createMockSdk([
             {
+                adapter: "live-llm-connector",
                 connector: "llm_token_metering",
                 rail: "llm_metering",
                 state: "closed",
+                checkedAt: 1700000000000,
+                durable: true,
+                durability: "remote",
+                features: {
+                    liveSettlement: true,
+                    runtimeVersion: "0.2.1",
+                },
+                compatibility: {
+                    compatible: true,
+                    currentVersion: "0.2.1",
+                    supportedVersions: ["^0.2.0"],
+                },
                 retryPolicy: {
                     maxRetries: 2,
                     backoffMs: 1000,
@@ -37,15 +50,22 @@ describe("PactSdk - Batch 10 - Economics reconciliation", () => {
                     profileId: "openai-live",
                     providerId: "openai",
                     endpoint: "https://billing.example.test/llm",
+                    timeoutMs: 1500,
                     credentialType: "bearer",
                     configuredCredentialFields: ["token"],
+                    metadata: { network: "mainnet" },
                 },
             },
         ]);
         const health = await sdk.getEconomicsConnectorHealth();
         expect(health[0]?.timeoutMs).toBe(1500);
+        expect(health[0]?.durability).toBe("remote");
+        expect(health[0]?.features?.runtimeVersion).toBe("0.2.1");
+        expect(health[0]?.compatibility?.supportedVersions?.[0]).toBe("^0.2.0");
         expect(health[0]?.retryPolicy.backoffStrategy).toBe("exponential");
         expect(health[0]?.profile?.providerId).toBe("openai");
+        expect(health[0]?.profile?.timeoutMs).toBe(1500);
+        expect(health[0]?.profile?.metadata?.network).toBe("mainnet");
         expect(captured[0].method).toBe("GET");
         expect(captured[0].url).toBe("https://api.pact/economics/connectors/health");
     });

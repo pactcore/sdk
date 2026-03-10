@@ -127,7 +127,17 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
       credentials: { token: "secret" },
     };
     const health: SettlementConnectorHealth = {
+      adapter: "llm-live-connector",
       state: "closed",
+      checkedAt: 1_700_000_000_000,
+      durable: true,
+      durability: "remote",
+      features: { liveSettlement: true, runtimeVersion: "0.2.1" },
+      compatibility: {
+        compatible: true,
+        currentVersion: "0.2.1",
+        supportedVersions: ["^0.2.0"],
+      },
       retryPolicy: {
         maxRetries: 3,
         backoffMs: 500,
@@ -141,8 +151,10 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
         profileId: profile.id,
         providerId: profile.providerId,
         endpoint: profile.endpoint,
+        timeoutMs: 2_000,
         credentialType: profile.credentialSchema.type,
         configuredCredentialFields: ["token"],
+        metadata: { network: "mainnet" },
       },
     };
     const transportRequest: SettlementConnectorTransportRequest = {
@@ -307,6 +319,9 @@ describe("SDK type parity - batch 36 bridge contracts", () => {
     const signerAddress = await signer.getAddress();
 
     expect(connectorHealth.profile?.credentialType).toBe("bearer");
+    expect(connectorHealth.profile?.timeoutMs).toBe(2_000);
+    expect(connectorHealth.profile?.metadata?.network).toBe("mainnet");
+    expect(connectorHealth.features?.runtimeVersion).toBe("0.2.1");
     expect(transportRequest.connector).toBe("llm_token_metering");
     expect(transportResponse.status).toBe(201);
     expect(stablecoinResult.transactionHash).toBe("0xtx-1");
