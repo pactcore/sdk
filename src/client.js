@@ -193,6 +193,9 @@ export class PactSdk {
     async getZKProofReceipts(proofId) {
         return this.request("GET", `/zk/proofs/${encodeURIComponent(proofId)}/receipts`);
     }
+    async getZKAdapterHealth() {
+        return this.request("GET", "/zk/adapters/health");
+    }
     async getZKBridgeRuntime() {
         return this.request("GET", "/zk/bridge/runtime");
     }

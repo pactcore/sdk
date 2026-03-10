@@ -516,6 +516,10 @@ export class PactSdk {
     );
   }
 
+  async getZKAdapterHealth(): Promise<AdapterHealthResponse> {
+    return this.request<AdapterHealthResponse>("GET", "/zk/adapters/health");
+  }
+
   async getZKBridgeRuntime(): Promise<ZKBridgeRuntimeInfo> {
     return this.request<ZKBridgeRuntimeInfo>("GET", "/zk/bridge/runtime");
   }

@@ -85,6 +85,48 @@ describe("PactSdk - Batch 36 - Appendix C", () => {
     expect(captured[0].url).toBe("https://api.pact/zk/proofs/zk_1/receipts");
   });
 
+  it("getZKAdapterHealth -> GET /zk/adapters/health", async () => {
+    const { sdk, captured } = createMockSdk({
+      status: "degraded",
+      checkedAt: 1700000000000,
+      adapters: [
+        {
+          name: "zk-prover-bridge",
+          state: "degraded",
+          durability: "remote",
+          features: {
+            manifestCatalog: true,
+            manifestCatalogState: "unhealthy",
+            providerId: "appendix-c-provider",
+            requiredCredentialFields: "accessToken",
+          },
+          lastError: {
+            adapter: "zk",
+            operation: "configure_remote_bridge",
+            code: "zk_remote_endpoint_missing",
+            message: "remote endpoint missing",
+            retryable: false,
+            occurredAt: 1700000000001,
+          },
+        },
+      ],
+    });
+
+    const health = await sdk.getZKAdapterHealth();
+
+    expect(Array.isArray(health)).toBe(false);
+    if (Array.isArray(health)) {
+      throw new Error("expected summary payload");
+    }
+    expect(health.status).toBe("degraded");
+    expect(health.adapters[0]?.name).toBe("zk-prover-bridge");
+    expect(health.adapters[0]?.features?.providerId).toBe("appendix-c-provider");
+    expect(health.adapters[0]?.features?.manifestCatalogState).toBe("unhealthy");
+    expect(health.adapters[0]?.lastError?.code).toBe("zk_remote_endpoint_missing");
+    expect(captured[0].method).toBe("GET");
+    expect(captured[0].url).toBe("https://api.pact/zk/adapters/health");
+  });
+
   it("getZKBridgeRuntime -> GET /zk/bridge/runtime", async () => {
     const { sdk, captured } = createMockSdk({
       adapter: "appendix-c-adapter",
