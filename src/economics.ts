@@ -1,4 +1,9 @@
-import type { AdapterCompatibilityReport, AdapterDurability, AdapterFeatureMap } from "./types";
+import type {
+  AdapterCompatibilityReport,
+  AdapterDurability,
+  AdapterFeatureMap,
+  MaybePromise,
+} from "./types";
 
 export type CompensationAssetKind =
   | "usdc"
@@ -315,8 +320,8 @@ export interface ConnectorHealthReport extends SettlementConnectorHealth {
 }
 
 export interface ManagedSettlementConnector {
-  getHealth(): SettlementConnectorHealth | Promise<SettlementConnectorHealth>;
-  resetHealth(): void | Promise<void>;
+  getHealth(): MaybePromise<SettlementConnectorHealth>;
+  resetHealth(): MaybePromise<void>;
   hasExternalReference(externalReference: string): Promise<boolean>;
 }
 

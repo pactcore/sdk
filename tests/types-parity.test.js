@@ -330,7 +330,7 @@ describe("Type parity contracts", () => {
         });
         const result = await connectors.llmTokenMetering.applyMeteringCredit(request);
         const stablecoinResult = await connectors.stablecoinBridge.submitStablecoinTransfer(stablecoinRequest);
-        const llmHealth = connectors.llmTokenMetering.getHealth();
+        const llmHealth = await connectors.llmTokenMetering.getHealth();
         const stablecoinHealth = await connectors.stablecoinBridge.getHealth();
         expect(response.status).toBe(200);
         expect(result.status).toBe("applied");

@@ -78,6 +78,8 @@ export interface HealthResponse {
   service?: string;
 }
 
+export type MaybePromise<T> = T | Promise<T>;
+
 export type AdapterHealthState = "healthy" | "degraded" | "unhealthy";
 
 export type AdapterDurability = "memory" | "filesystem" | "database" | "remote" | "unknown";
@@ -258,14 +260,14 @@ export interface ManagedBackendAdapter {
   readonly capability: ManagedBackendCapability;
   readonly mode: ManagedBackendMode;
   readonly durability?: AdapterDurability;
-  getHealth?(): Promise<AdapterHealthReport> | AdapterHealthReport;
-  getManagedHealth?(): Promise<ManagedBackendHealthReport> | ManagedBackendHealthReport;
+  getHealth?(): MaybePromise<AdapterHealthReport>;
+  getManagedHealth?(): MaybePromise<ManagedBackendHealthReport>;
 }
 
 export interface ManagedBackendQueueAdapter<TPayload = unknown> extends ManagedBackendAdapter {
   readonly capability: "queue";
   enqueue(message: ManagedQueueMessage<TPayload>): Promise<ManagedQueueReceipt>;
-  getDepth?(): Promise<ManagedQueueDepth> | ManagedQueueDepth;
+  getDepth?(): MaybePromise<ManagedQueueDepth>;
 }
 
 export interface ManagedBackendStoreAdapter<TValue = unknown> extends ManagedBackendAdapter {
