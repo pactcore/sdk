@@ -13,6 +13,12 @@ This package is designed for **human-agent protocol participation**, not only en
 ## Current Capabilities
 
 - typed `PactSdk` transport client
+- audited `PactSdk` route parity with the current `pact-network-core-bun` HTTP surface across:
+  - observability + admin
+  - identity + reputation + roles + anti-spam + security + ZK
+  - tasks + missions + disputes
+  - payments + economics + governance + rewards + onchain finality
+  - compute + heartbeat + data + dev platform modules
 - `WorkerRuntime` with:
   - `runOnce()`
   - `runLoop()`
@@ -32,6 +38,19 @@ This package is designed for **human-agent protocol participation**, not only en
   - settlement audit + lifecycle replay query builders
   - paginated reconciliation queue client methods
 - onchain governance + rewards lifecycle client methods
+- compute, data marketplace, plugin marketplace, dispute, and managed-backend client methods
+
+## Route Parity Snapshot
+
+- audited on March 12, 2026 against local `core` and whitepaper sources
+- `PactSdk` currently exposes:
+  - 172 public async methods
+  - 171 direct HTTP-backed methods
+  - 167 implemented `core` routes covered end-to-end
+  - 1 composite helper: `querySettlementReconciliationRecords()`
+  - 4 forward-compatible SDK-only transport methods pending matching `core` route support
+
+See `docs/route-parity-audit.md` for the full matrix and whitepaper traceability notes.
 
 ## Economic Model Support
 
@@ -96,3 +115,4 @@ bun run typecheck
 - `docs/runtime-composition.md`
 - `docs/compatibility.md`
 - `docs/economics.md`
+- `docs/route-parity-audit.md`
