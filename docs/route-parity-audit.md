@@ -1,24 +1,23 @@
 # SDK Route Parity Audit
 
-This audit captures the `@pactcore/sdk` transport surface as of March 12, 2026.
+This audit captures the `@pactcore/sdk` transport surface as of March 13, 2026.
+
+This file is generated from `scripts/route-parity-audit.mjs`.
 
 ## Sources Reviewed
 
+- SDK client surface: `src/client.ts`
 - implemented core routes: `../pact-network-core-bun/src/api/app.ts`
-- whitepaper baseline: `../pact-whitepaper-docs/app/page.mdx`
+- whitepaper baseline: `../pact-whitepaper-docs/app/whitepaper/**/*.mdx`
 
 ## Summary
 
 - `PactSdk` exposes `172` public async methods.
 - `171` of those methods directly call HTTP routes.
-- `167` implemented `core` routes have direct SDK client coverage.
-- `1` method is a composed helper:
-  - `querySettlementReconciliationRecords()` delegates to `querySettlementAuditRecords()` with a default `reconciled` status filter.
-- `4` direct transport methods are forward-compatible SDK additions that do not yet have matching routes in the audited `core` app:
-  - `getAntiSpamStake()`
-  - `trackOnchainTransaction()`
-  - `recordOnchainTransactionInclusion()`
-  - `recordCanonicalBlock()`
+- `167` implemented `core` routes are audited.
+- Missing SDK coverage for implemented `core` routes: `0`.
+- Composite helpers: `querySettlementReconciliationRecords()`.
+- Forward-compatible SDK-only direct methods without matching audited `core` routes: `getAntiSpamStake()`, `recordCanonicalBlock()`, `recordOnchainTransactionInclusion()`, `trackOnchainTransaction()`.
 
 ## Core Route Family Coverage
 
@@ -30,6 +29,19 @@ This audit captures the `@pactcore/sdk` transport surface as of March 12, 2026.
 | tasks + missions | 14 | covered |
 | payments + economics + governance | 44 | covered |
 | platform extensions (`compute`, `heartbeat`, `data`, `dev`, `disputes`) | 53 | covered |
+
+## Implemented Core Route Gaps
+
+None. Every audited implemented `core` route currently has direct `PactSdk` coverage.
+
+## Forward-Compatible SDK-Only Direct Methods
+
+| SDK method | Route | Note |
+|---|---|---|
+| `getAntiSpamStake()` | `GET /anti-spam/${encodeURIComponent(participantId)}/stake/${encodeURIComponent(action)}` | no matching audited core route yet |
+| `recordCanonicalBlock()` | `POST /onchain/finality/blocks/canonical` | no matching audited core route yet |
+| `recordOnchainTransactionInclusion()` | `POST /onchain/finality/transactions/${encodeURIComponent(txId)}/inclusion` | no matching audited core route yet |
+| `trackOnchainTransaction()` | `POST /onchain/finality/transactions` | no matching audited core route yet |
 
 ## Whitepaper Traceability
 
@@ -51,8 +63,6 @@ The current SDK transport surface maps well to the whitepaper's route-relevant c
 
 ## Whitepaper Notes Without Dedicated Client Routes
 
-Some whitepaper concepts are represented in the current implementation without standalone SDK transport methods:
-
 - auction design from `8.3` is currently reflected through task pricing inputs, payment/economic analytics, and matching logic in `core`, not a dedicated auction route
 - multidimensional matching from `8.4` is expressed through task constraints, role/capability checks, reputation filters, and compute/data selection flows rather than a single matching endpoint
 - multi-layer verification from `6.3` and `8.1` is distributed across mission verdicts, disputes, reputation, anti-spam, security, and ZK proof routes
@@ -61,8 +71,8 @@ Some whitepaper concepts are represented in the current implementation without s
 
 For implemented `core` HTTP routes, SDK parity is complete in this repo.
 
-The remaining parity work is not missing client coverage for existing audited routes; it is ongoing maintenance:
+The remaining parity work is ongoing maintenance:
 
-- keep this document in sync when `core` adds routes
+- keep this generated audit in sync when `core` adds routes
 - convert forward-compatible SDK-only methods to full parity once matching `core` routes ship
-- update the whitepaper traceability notes when new route families land
+- update the whitepaper traceability table when new route families land

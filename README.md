@@ -42,7 +42,7 @@ This package is designed for **human-agent protocol participation**, not only en
 
 ## Route Parity Snapshot
 
-- audited on March 12, 2026 against local `core` and whitepaper sources
+- audited on March 13, 2026 against local `core` and whitepaper sources
 - `PactSdk` currently exposes:
   - 172 public async methods
   - 171 direct HTTP-backed methods
@@ -106,6 +106,7 @@ await runtime.runLoop({ iterations: 10 });
 bun install
 bun test
 bun run typecheck
+bun run audit:routes
 ```
 
 ## Documentation

@@ -15,7 +15,8 @@
   },
   "scripts": {
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "audit:routes": "node scripts/route-parity-audit.mjs --write"
   },
   "keywords": [
     "pact",
