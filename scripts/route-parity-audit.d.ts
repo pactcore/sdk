@@ -23,12 +23,19 @@ export interface WhitepaperCoverageRow {
   coverage: string;
 }
 
+export interface MethodCoverage {
+  authoredTestFiles: string[];
+  testedMethods: string[];
+  untestedMethods: string[];
+}
+
 export interface RouteParityReport {
   auditedOn: string;
   sources: {
     client: string;
     core: string;
     whitepaper: string;
+    authoredTests: string;
   };
   summary: {
     publicAsyncMethods: number;
@@ -37,10 +44,17 @@ export interface RouteParityReport {
     missingCoreRoutes: number;
     compositeHelpers: string[];
     sdkOnlyDirectMethods: string[];
+    authoredTestFiles: number;
+    testedPublicMethods: number;
+    untestedPublicMethods: number;
+    testedDirectHttpMethods: number;
+    untestedDirectHttpMethods: number;
   };
   routeFamilies: RouteFamilyCoverage[];
   missingCoreRoutes: Array<Pick<CoreRoute, "verb" | "path">>;
   sdkOnlyRouteMethods: Array<Pick<ClientRouteMethod, "name" | "verb" | "path">>;
+  publicMethodTestCoverage: MethodCoverage;
+  directMethodTestCoverage: MethodCoverage;
   whitepaperSections: string[];
   whitepaperCoverage: WhitepaperCoverageRow[];
   whitepaperNotesWithoutDedicatedRoutes: string[];

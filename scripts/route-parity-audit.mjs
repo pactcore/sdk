@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
@@ -8,6 +8,7 @@ const repoRoot = resolve(__dirname, "..");
 const clientPath = resolve(repoRoot, "src/client.ts");
 const corePath = resolve(repoRoot, "../pact-network-core-bun/src/api/app.ts");
 const whitepaperPath = resolve(repoRoot, "../pact-whitepaper-docs/app/whitepaper");
+const testsPath = resolve(repoRoot, "tests");
 const auditDocPath = resolve(repoRoot, "docs/route-parity-audit.md");
 
 const whitepaperCoverage = [
@@ -71,6 +72,27 @@ function readUtf8(path) {
   return readFileSync(path, "utf8");
 }
 
+function collectFiles(directory, predicate) {
+  const entries = readdirSync(directory).sort();
+  const files = [];
+
+  for (const entry of entries) {
+    const fullPath = resolve(directory, entry);
+    const stats = statSync(fullPath);
+
+    if (stats.isDirectory()) {
+      files.push(...collectFiles(fullPath, predicate));
+      continue;
+    }
+
+    if (predicate(fullPath)) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
 function normalizeRoutePath(path) {
   return path
     .replace(/[`'"]/g, "")
@@ -120,29 +142,10 @@ function extractCoreRoutes(coreSource) {
   }));
 }
 
-function collectMdxFiles(directory) {
-  const entries = readdirSync(directory).sort();
-  const files = [];
-
-  for (const entry of entries) {
-    const fullPath = resolve(directory, entry);
-    const stats = statSync(fullPath);
-
-    if (stats.isDirectory()) {
-      files.push(...collectMdxFiles(fullPath));
-      continue;
-    }
-
-    if (entry.endsWith(".mdx")) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
-
 function extractWhitepaperSections(whitepaperDirectory) {
-  return collectMdxFiles(whitepaperDirectory).flatMap((file) => {
+  const mdxFiles = collectFiles(whitepaperDirectory, (file) => file.endsWith(".mdx"));
+
+  return mdxFiles.flatMap((file) => {
     const source = readUtf8(file);
     return [...source.matchAll(/^##+\s+(.+)$/gm)].map((match) => match[1].trim());
   });
@@ -265,15 +268,55 @@ function extractClientSurface(clientSource) {
   return methods;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractTestCoverage(methodNames) {
+  const testFiles = collectFiles(testsPath, (file) => file.endsWith(".test.ts"));
+  const fileSources = testFiles.map((file) => ({
+    file,
+    source: readUtf8(file),
+  }));
+
+  const testedMethods = [];
+  const untestedMethods = [];
+
+  for (const methodName of methodNames) {
+    const pattern = new RegExp(`\\b${escapeRegExp(methodName)}\\b`);
+    const covered = fileSources.some(({ source }) => pattern.test(source));
+
+    if (covered) {
+      testedMethods.push(methodName);
+    } else {
+      untestedMethods.push(methodName);
+    }
+  }
+
+  return {
+    authoredTestFiles: testFiles.map((file) => relative(repoRoot, file)).sort(),
+    testedMethods: testedMethods.sort(),
+    untestedMethods: untestedMethods.sort(),
+  };
+}
+
+function displayRoute(method) {
+  return `${method.verb} ${String(method.path).replace(/[`]/g, "")}`;
+}
+
 function buildAuditReport() {
   const clientSource = readUtf8(clientPath);
   const coreSource = readUtf8(corePath);
+
   const clientMethods = extractClientSurface(clientSource);
   const coreRoutes = extractCoreRoutes(coreSource);
   const whitepaperSections = extractWhitepaperSections(whitepaperPath);
 
   const directMethods = clientMethods.filter((method) => method.direct);
   const compositeMethods = clientMethods.filter((method) => !method.direct);
+
+  const publicTestCoverage = extractTestCoverage(clientMethods.map((method) => method.name));
+  const directTestCoverage = extractTestCoverage(directMethods.map((method) => method.name));
 
   const coreRouteMap = new Map(coreRoutes.map((route) => [`${route.verb} ${route.normalized}`, route]));
   const directRouteMap = new Map(directMethods.map((method) => [`${method.verb} ${method.normalized}`, method]));
@@ -294,7 +337,7 @@ function buildAuditReport() {
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
 
-  const familyCounts = [...coreRoutes]
+  const routeFamilies = [...coreRoutes]
     .reduce((acc, route) => {
       const family = classifyRouteFamily(route.path);
       acc.set(family, (acc.get(family) ?? 0) + 1);
@@ -302,7 +345,7 @@ function buildAuditReport() {
     }, new Map())
     .entries();
 
-  const routeFamilies = [...familyCounts]
+  const orderedRouteFamilies = [...routeFamilies]
     .map(([family, count]) => ({ family, coreRoutes: count, sdkStatus: "covered" }))
     .sort((left, right) => {
       const order = [
@@ -322,6 +365,7 @@ function buildAuditReport() {
       client: "src/client.ts",
       core: "../pact-network-core-bun/src/api/app.ts",
       whitepaper: "../pact-whitepaper-docs/app/whitepaper/**/*.mdx",
+      authoredTests: "tests/**/*.test.ts",
     },
     summary: {
       publicAsyncMethods: clientMethods.length,
@@ -330,10 +374,17 @@ function buildAuditReport() {
       missingCoreRoutes: missingCoreRoutes.length,
       compositeHelpers: compositeMethods.map((method) => method.name),
       sdkOnlyDirectMethods: sdkOnlyRouteMethods.map((method) => method.name),
+      authoredTestFiles: publicTestCoverage.authoredTestFiles.length,
+      testedPublicMethods: publicTestCoverage.testedMethods.length,
+      untestedPublicMethods: publicTestCoverage.untestedMethods.length,
+      testedDirectHttpMethods: directTestCoverage.testedMethods.length,
+      untestedDirectHttpMethods: directTestCoverage.untestedMethods.length,
     },
-    routeFamilies,
+    routeFamilies: orderedRouteFamilies,
     missingCoreRoutes,
     sdkOnlyRouteMethods,
+    publicMethodTestCoverage: publicTestCoverage,
+    directMethodTestCoverage: directTestCoverage,
     whitepaperSections,
     whitepaperCoverage,
     whitepaperNotesWithoutDedicatedRoutes,
@@ -349,7 +400,8 @@ function renderMarkdown(report) {
   lines.push("## Sources Reviewed", "");
   lines.push(`- SDK client surface: \`${report.sources.client}\``);
   lines.push(`- implemented core routes: \`${report.sources.core}\``);
-  lines.push(`- whitepaper baseline: \`${report.sources.whitepaper}\``, "");
+  lines.push(`- whitepaper baseline: \`${report.sources.whitepaper}\``);
+  lines.push(`- authored SDK tests scanned for surface coverage: \`${report.sources.authoredTests}\``, "");
   lines.push("## Summary", "");
   lines.push(`- \`PactSdk\` exposes \`${report.summary.publicAsyncMethods}\` public async methods.`);
   lines.push(`- \`${report.summary.directHttpMethods}\` of those methods directly call HTTP routes.`);
@@ -359,11 +411,27 @@ function renderMarkdown(report) {
   lines.push(
     `- Forward-compatible SDK-only direct methods without matching audited \`core\` routes: ${report.summary.sdkOnlyDirectMethods.map((name) => `\`${name}()\``).join(", ")}.`,
   );
+  lines.push(
+    `- Authored TypeScript tests cover \`${report.summary.testedPublicMethods}\` / \`${report.summary.publicAsyncMethods}\` public methods and \`${report.summary.testedDirectHttpMethods}\` / \`${report.summary.directHttpMethods}\` direct HTTP methods.`,
+  );
   lines.push("");
   lines.push("## Core Route Family Coverage", "");
   lines.push("| Family | Implemented core routes | SDK status |", "|---|---:|---|");
   for (const family of report.routeFamilies) {
     lines.push(`| ${family.family} | ${family.coreRoutes} | ${family.sdkStatus} |`);
+  }
+  lines.push("");
+  lines.push("## SDK Surface Test Coverage", "");
+  lines.push(`- Authored TypeScript test files scanned: \`${report.summary.authoredTestFiles}\`.`);
+  lines.push(`- Untested public methods: \`${report.summary.untestedPublicMethods}\`.`);
+  lines.push(`- Untested direct HTTP methods: \`${report.summary.untestedDirectHttpMethods}\`.`);
+  if (report.publicMethodTestCoverage.untestedMethods.length === 0) {
+    lines.push("- Every public `PactSdk` method is referenced by at least one authored TypeScript test.");
+  } else {
+    lines.push("- Public methods missing authored TypeScript test evidence:");
+    for (const name of report.publicMethodTestCoverage.untestedMethods) {
+      lines.push(`  - \`${name}()\``);
+    }
   }
   lines.push("");
   lines.push("## Implemented Core Route Gaps", "");
@@ -397,14 +465,11 @@ function renderMarkdown(report) {
   lines.push("For implemented `core` HTTP routes, SDK parity is complete in this repo.", "");
   lines.push("The remaining parity work is ongoing maintenance:", "");
   lines.push("- keep this generated audit in sync when `core` adds routes");
+  lines.push("- keep authored TypeScript coverage at full public-surface parity as new SDK methods land");
   lines.push("- convert forward-compatible SDK-only methods to full parity once matching `core` routes ship");
   lines.push("- update the whitepaper traceability table when new route families land");
 
   return `${lines.join("\n")}\n`;
-}
-
-function displayRoute(method) {
-  return `${method.verb} ${String(method.path).replace(/[`]/g, "")}`;
 }
 
 function main(argv) {

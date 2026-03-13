@@ -9,6 +9,7 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 - SDK client surface: `src/client.ts`
 - implemented core routes: `../pact-network-core-bun/src/api/app.ts`
 - whitepaper baseline: `../pact-whitepaper-docs/app/whitepaper/**/*.mdx`
+- authored SDK tests scanned for surface coverage: `tests/**/*.test.ts`
 
 ## Summary
 
@@ -18,6 +19,7 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 - Missing SDK coverage for implemented `core` routes: `0`.
 - Composite helpers: `querySettlementReconciliationRecords()`.
 - Forward-compatible SDK-only direct methods without matching audited `core` routes: `getAntiSpamStake()`, `recordCanonicalBlock()`, `recordOnchainTransactionInclusion()`, `trackOnchainTransaction()`.
+- Authored TypeScript tests cover `172` / `172` public methods and `171` / `171` direct HTTP methods.
 
 ## Core Route Family Coverage
 
@@ -29,6 +31,13 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 | tasks + missions | 14 | covered |
 | payments + economics + governance | 44 | covered |
 | platform extensions (`compute`, `heartbeat`, `data`, `dev`, `disputes`) | 53 | covered |
+
+## SDK Surface Test Coverage
+
+- Authored TypeScript test files scanned: `18`.
+- Untested public methods: `0`.
+- Untested direct HTTP methods: `0`.
+- Every public `PactSdk` method is referenced by at least one authored TypeScript test.
 
 ## Implemented Core Route Gaps
 
@@ -74,5 +83,6 @@ For implemented `core` HTTP routes, SDK parity is complete in this repo.
 The remaining parity work is ongoing maintenance:
 
 - keep this generated audit in sync when `core` adds routes
+- keep authored TypeScript coverage at full public-surface parity as new SDK methods land
 - convert forward-compatible SDK-only methods to full parity once matching `core` routes ship
 - update the whitepaper traceability table when new route families land

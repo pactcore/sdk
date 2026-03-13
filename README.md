@@ -49,6 +49,7 @@ This package is designed for **human-agent protocol participation**, not only en
   - 167 implemented `core` routes covered end-to-end
   - 1 composite helper: `querySettlementReconciliationRecords()`
   - 4 forward-compatible SDK-only transport methods pending matching `core` route support
+  - authored TypeScript tests reference all 172 public methods
 
 See `docs/route-parity-audit.md` for the full matrix and whitepaper traceability notes.
 

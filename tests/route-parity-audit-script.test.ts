@@ -16,8 +16,23 @@ interface RouteParityReport {
     missingCoreRoutes: number;
     compositeHelpers: string[];
     sdkOnlyDirectMethods: string[];
+    authoredTestFiles: number;
+    testedPublicMethods: number;
+    untestedPublicMethods: number;
+    testedDirectHttpMethods: number;
+    untestedDirectHttpMethods: number;
   };
   routeFamilies: RouteFamilyCoverage[];
+  publicMethodTestCoverage: {
+    authoredTestFiles: string[];
+    testedMethods: string[];
+    untestedMethods: string[];
+  };
+  directMethodTestCoverage: {
+    authoredTestFiles: string[];
+    testedMethods: string[];
+    untestedMethods: string[];
+  };
   whitepaperSections: string[];
 }
 
@@ -59,6 +74,13 @@ describe("route parity audit script", () => {
       "recordOnchainTransactionInclusion",
       "trackOnchainTransaction",
     ]);
+    expect(report.summary.authoredTestFiles).toBe(18);
+    expect(report.summary.testedPublicMethods).toBe(172);
+    expect(report.summary.untestedPublicMethods).toBe(0);
+    expect(report.summary.testedDirectHttpMethods).toBe(171);
+    expect(report.summary.untestedDirectHttpMethods).toBe(0);
+    expect(report.publicMethodTestCoverage.untestedMethods).toEqual([]);
+    expect(report.directMethodTestCoverage.untestedMethods).toEqual([]);
   });
 
   it("keeps the family-level coverage counts stable", () => {
