@@ -15,7 +15,7 @@ describe("PactSdk route parity audit guardrails", () => {
   it("keeps the audited public surface stable", () => {
     const methods = publicAsyncMethods();
 
-    expect(methods).toHaveLength(172);
+    expect(methods).toHaveLength(185);
     expect(methods).toContain("querySettlementReconciliationRecords");
     expect(methods).toContain("getAntiSpamStake");
     expect(methods).toContain("trackOnchainTransaction");
@@ -24,7 +24,7 @@ describe("PactSdk route parity audit guardrails", () => {
   });
 
   it("keeps the audited parity exceptions explicit in source", () => {
-    expect((clientSource.match(/this\.request(?:<[^>]+>)?\(/g) ?? []).length).toBe(171);
+    expect((clientSource.match(/this\.request(?:<[^>]+>)?\(/g) ?? []).length).toBe(184);
 
     expect(clientSource).toContain("/anti-spam/${encodeURIComponent(participantId)}/stake/${encodeURIComponent(action)}");
     expect(clientSource).toContain('"POST", "/onchain/finality/transactions", input');

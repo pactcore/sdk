@@ -158,6 +158,20 @@ import type {
   ZKProof,
   ZKProofVerificationResult,
   ZKVerificationReceipt,
+  // ERC-8183
+  CastJuryVoteInput,
+  CommitteeSession,
+  CreateCommitteeSessionInput,
+  JuryExpiry,
+  JurySession,
+  OpenDisputeInput,
+  RequestJuryPanelInput,
+  SettlementBreakdown,
+  SettlementSplit,
+  SubmitCommitteeVoteInput,
+  TriggerValidationInput,
+  TriggerValidationResult,
+  ValidationPipelineConfig,
 } from "./types";
 import {
   buildReconciliationQueueQueryParams,
@@ -1280,6 +1294,103 @@ export class PactSdk {
 
   async resolveDispute(disputeId: string): Promise<DisputeCase> {
     return this.request<DisputeCase>("POST", `/disputes/${encodeURIComponent(disputeId)}/resolve`, {});
+  }
+
+  // ── ERC-8183: Disputes (bonded) ────────────────────────────────
+
+  async openDispute(input: OpenDisputeInput): Promise<DisputeCase> {
+    return this.request<DisputeCase>("POST", "/disputes/open", input);
+  }
+
+  async closeEvidencePeriod(disputeId: string): Promise<DisputeCase> {
+    return this.request<DisputeCase>(
+      "POST",
+      `/disputes/${encodeURIComponent(disputeId)}/close-evidence`,
+      {},
+    );
+  }
+
+  async expireDispute(disputeId: string): Promise<DisputeCase> {
+    return this.request<DisputeCase>(
+      "POST",
+      `/disputes/${encodeURIComponent(disputeId)}/expire`,
+      {},
+    );
+  }
+
+  // ── ERC-8183: Committee ────────────────────────────────────────
+
+  async createCommitteeSession(input: CreateCommitteeSessionInput): Promise<CommitteeSession> {
+    return this.request<CommitteeSession>("POST", "/disputes/committee/sessions", input);
+  }
+
+  async submitCommitteeVote(
+    sessionId: string,
+    input: SubmitCommitteeVoteInput,
+  ): Promise<CommitteeSession> {
+    return this.request<CommitteeSession>(
+      "POST",
+      `/disputes/committee/sessions/${encodeURIComponent(sessionId)}/vote`,
+      input,
+    );
+  }
+
+  async getCommitteeSession(sessionId: string): Promise<CommitteeSession> {
+    return this.request<CommitteeSession>(
+      "GET",
+      `/disputes/committee/sessions/${encodeURIComponent(sessionId)}`,
+    );
+  }
+
+  // ── ERC-8183: Settlement splits ────────────────────────────────
+
+  async getSettlementSplits(settlementId: string): Promise<SettlementSplit> {
+    return this.request<SettlementSplit>(
+      "GET",
+      `/economics/settlements/${encodeURIComponent(settlementId)}/splits`,
+    );
+  }
+
+  async getSettlementBreakdown(settlementId: string): Promise<SettlementBreakdown> {
+    return this.request<SettlementBreakdown>(
+      "GET",
+      `/economics/settlements/${encodeURIComponent(settlementId)}/breakdown`,
+    );
+  }
+
+  // ── ERC-8183: Human jury ───────────────────────────────────────
+
+  async requestJuryPanel(input: RequestJuryPanelInput): Promise<JurySession> {
+    return this.request<JurySession>("POST", "/disputes/jury/sessions", input);
+  }
+
+  async castJuryVote(sessionId: string, input: CastJuryVoteInput): Promise<JurySession> {
+    return this.request<JurySession>(
+      "POST",
+      `/disputes/jury/sessions/${encodeURIComponent(sessionId)}/vote`,
+      input,
+    );
+  }
+
+  async expireJurySession(sessionId: string): Promise<JuryExpiry> {
+    return this.request<JuryExpiry>(
+      "POST",
+      `/disputes/jury/sessions/${encodeURIComponent(sessionId)}/expire`,
+      {},
+    );
+  }
+
+  // ── ERC-8183: Validation pipeline ─────────────────────────────
+
+  async getValidationPipelineConfig(taskId: string): Promise<ValidationPipelineConfig> {
+    return this.request<ValidationPipelineConfig>(
+      "GET",
+      `/tasks/${encodeURIComponent(taskId)}/validation/config`,
+    );
+  }
+
+  async triggerValidation(input: TriggerValidationInput): Promise<TriggerValidationResult> {
+    return this.request<TriggerValidationResult>("POST", "/validation/trigger", input);
   }
 
   private async request<T>(

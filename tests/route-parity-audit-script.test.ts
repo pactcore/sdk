@@ -63,21 +63,34 @@ describe("route parity audit script", () => {
   it("computes the audited SDK/core parity summary", () => {
     const report = loadAuditReport();
 
-    expect(report.summary.publicAsyncMethods).toBe(172);
-    expect(report.summary.directHttpMethods).toBe(171);
+    expect(report.summary.publicAsyncMethods).toBe(185);
+    expect(report.summary.directHttpMethods).toBe(184);
     expect(report.summary.implementedCoreRoutes).toBe(167);
     expect(report.summary.missingCoreRoutes).toBe(0);
     expect(report.summary.compositeHelpers).toEqual(["querySettlementReconciliationRecords"]);
     expect(report.summary.sdkOnlyDirectMethods).toEqual([
+      "castJuryVote",
+      "closeEvidencePeriod",
+      "createCommitteeSession",
+      "expireDispute",
+      "expireJurySession",
       "getAntiSpamStake",
+      "getCommitteeSession",
+      "getSettlementBreakdown",
+      "getSettlementSplits",
+      "getValidationPipelineConfig",
+      "openDispute",
       "recordCanonicalBlock",
       "recordOnchainTransactionInclusion",
+      "requestJuryPanel",
+      "submitCommitteeVote",
       "trackOnchainTransaction",
+      "triggerValidation",
     ]);
-    expect(report.summary.authoredTestFiles).toBe(18);
-    expect(report.summary.testedPublicMethods).toBe(172);
+    expect(report.summary.authoredTestFiles).toBe(19);
+    expect(report.summary.testedPublicMethods).toBe(185);
     expect(report.summary.untestedPublicMethods).toBe(0);
-    expect(report.summary.testedDirectHttpMethods).toBe(171);
+    expect(report.summary.testedDirectHttpMethods).toBe(184);
     expect(report.summary.untestedDirectHttpMethods).toBe(0);
     expect(report.publicMethodTestCoverage.untestedMethods).toEqual([]);
     expect(report.directMethodTestCoverage.untestedMethods).toEqual([]);
