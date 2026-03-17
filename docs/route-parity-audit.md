@@ -35,7 +35,7 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 
 ## SDK Surface Test Coverage
 
-- Authored TypeScript test files scanned: `24`.
+- Authored TypeScript test files scanned: `25`.
 - Untested public methods: `0`.
 - Untested direct HTTP methods: `0`.
 - Every public `PactSdk` method is referenced by at least one authored TypeScript test.
