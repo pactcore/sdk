@@ -63,9 +63,9 @@ describe("route parity audit script", () => {
   it("computes the audited SDK/core parity summary", () => {
     const report = loadAuditReport();
 
-    expect(report.summary.publicAsyncMethods).toBe(185);
-    expect(report.summary.directHttpMethods).toBe(184);
-    expect(report.summary.implementedCoreRoutes).toBe(167);
+    expect(report.summary.publicAsyncMethods).toBe(193);
+    expect(report.summary.directHttpMethods).toBe(192);
+    expect(report.summary.implementedCoreRoutes).toBe(175);
     expect(report.summary.missingCoreRoutes).toBe(0);
     expect(report.summary.compositeHelpers).toEqual(["querySettlementReconciliationRecords"]);
     expect(report.summary.sdkOnlyDirectMethods).toEqual([
@@ -87,10 +87,11 @@ describe("route parity audit script", () => {
       "trackOnchainTransaction",
       "triggerValidation",
     ]);
-    expect(report.summary.authoredTestFiles).toBe(19);
-    expect(report.summary.testedPublicMethods).toBe(185);
+    // 20 authoredTestFiles: 19 original + 1 new batch37 (only .test.ts scanned)
+    expect(report.summary.authoredTestFiles).toBe(20);
+    expect(report.summary.testedPublicMethods).toBe(193);
     expect(report.summary.untestedPublicMethods).toBe(0);
-    expect(report.summary.testedDirectHttpMethods).toBe(184);
+    expect(report.summary.testedDirectHttpMethods).toBe(192);
     expect(report.summary.untestedDirectHttpMethods).toBe(0);
     expect(report.publicMethodTestCoverage.untestedMethods).toEqual([]);
     expect(report.directMethodTestCoverage.untestedMethods).toEqual([]);
@@ -99,6 +100,7 @@ describe("route parity audit script", () => {
   it("keeps the family-level coverage counts stable", () => {
     const report = loadAuditReport();
     expect(report.routeFamilies).toEqual([
+      { family: "committee", coreRoutes: 8, sdkStatus: "covered" },
       { family: "health", coreRoutes: 1, sdkStatus: "covered" },
       { family: "observability + admin", coreRoutes: 16, sdkStatus: "covered" },
       { family: "identity + security + ZK", coreRoutes: 39, sdkStatus: "covered" },

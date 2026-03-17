@@ -13,18 +13,19 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 
 ## Summary
 
-- `PactSdk` exposes `185` public async methods.
-- `184` of those methods directly call HTTP routes.
-- `167` implemented `core` routes are audited.
+- `PactSdk` exposes `193` public async methods.
+- `192` of those methods directly call HTTP routes.
+- `175` implemented `core` routes are audited.
 - Missing SDK coverage for implemented `core` routes: `0`.
 - Composite helpers: `querySettlementReconciliationRecords()`.
 - Forward-compatible SDK-only direct methods without matching audited `core` routes: `castJuryVote()`, `closeEvidencePeriod()`, `createCommitteeSession()`, `expireDispute()`, `expireJurySession()`, `getAntiSpamStake()`, `getCommitteeSession()`, `getSettlementBreakdown()`, `getSettlementSplits()`, `getValidationPipelineConfig()`, `openDispute()`, `recordCanonicalBlock()`, `recordOnchainTransactionInclusion()`, `requestJuryPanel()`, `submitCommitteeVote()`, `trackOnchainTransaction()`, `triggerValidation()`.
-- Authored TypeScript tests cover `185` / `185` public methods and `184` / `184` direct HTTP methods.
+- Authored TypeScript tests cover `193` / `193` public methods and `192` / `192` direct HTTP methods.
 
 ## Core Route Family Coverage
 
 | Family | Implemented core routes | SDK status |
 |---|---:|---|
+| committee | 8 | covered |
 | health | 1 | covered |
 | observability + admin | 16 | covered |
 | identity + security + ZK | 39 | covered |
@@ -34,7 +35,7 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 
 ## SDK Surface Test Coverage
 
-- Authored TypeScript test files scanned: `19`.
+- Authored TypeScript test files scanned: `20`.
 - Untested public methods: `0`.
 - Untested direct HTTP methods: `0`.
 - Every public `PactSdk` method is referenced by at least one authored TypeScript test.

@@ -159,8 +159,11 @@ import type {
   ZKProofVerificationResult,
   ZKVerificationReceipt,
   // ERC-8183
+  CastCoreCommitteeVoteInput,
   CastJuryVoteInput,
   CommitteeSession,
+  ConfigureCommitteeInput,
+  CoreCommitteeReview,
   CreateCommitteeSessionInput,
   JuryExpiry,
   JurySession,
@@ -168,9 +171,11 @@ import type {
   RequestJuryPanelInput,
   SettlementBreakdown,
   SettlementSplit,
+  StakeValidatorInput,
   SubmitCommitteeVoteInput,
   TriggerValidationInput,
   TriggerValidationResult,
+  ValidatorAccount,
   ValidationPipelineConfig,
 } from "./types";
 import {
@@ -1339,6 +1344,52 @@ export class PactSdk {
     return this.request<CommitteeSession>(
       "GET",
       `/disputes/committee/sessions/${encodeURIComponent(sessionId)}`,
+    );
+  }
+
+  // ── Core committee validation ────────────────────────────────
+
+  async stakeValidator(input: StakeValidatorInput): Promise<ValidatorAccount> {
+    return this.request<ValidatorAccount>("POST", "/committee/validators", input);
+  }
+
+  async listValidatorAccounts(): Promise<ValidatorAccount[]> {
+    return this.request<ValidatorAccount[]>("GET", "/committee/validators");
+  }
+
+  async getValidatorAccount(validatorId: string): Promise<ValidatorAccount> {
+    return this.request<ValidatorAccount>(
+      "GET",
+      `/committee/validators/${encodeURIComponent(validatorId)}`,
+    );
+  }
+
+  async configureCommittee(input: ConfigureCommitteeInput): Promise<CoreCommitteeReview> {
+    return this.request<CoreCommitteeReview>("POST", "/committee/configure", input);
+  }
+
+  async castCoreCommitteeVote(input: CastCoreCommitteeVoteInput): Promise<CoreCommitteeReview> {
+    return this.request<CoreCommitteeReview>("POST", "/committee/vote", input);
+  }
+
+  async getCoreCommitteeReview(missionId: string): Promise<CoreCommitteeReview> {
+    return this.request<CoreCommitteeReview>(
+      "GET",
+      `/committee/${encodeURIComponent(missionId)}`,
+    );
+  }
+
+  async finalizeCoreCommittee(missionId: string): Promise<CoreCommitteeReview> {
+    return this.request<CoreCommitteeReview>(
+      "POST",
+      `/committee/${encodeURIComponent(missionId)}/finalize`,
+    );
+  }
+
+  async recordCoreCommitteeAppeal(missionId: string): Promise<{ recorded: boolean }> {
+    return this.request<{ recorded: boolean }>(
+      "POST",
+      `/committee/${encodeURIComponent(missionId)}/appeal`,
     );
   }
 
