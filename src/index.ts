@@ -3,3 +3,6 @@ export * from "./client";
 export * from "./worker-runtime";
 export * from "./event-sources";
 export * from "./economics";
+export * from "./task-classification";
+export * from "./auction";
+export * from "./nash-equilibrium";
