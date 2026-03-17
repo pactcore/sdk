@@ -2585,3 +2585,113 @@ export interface OpenDisputeInput {
   subjectType?: string;
   subjectRef?: string;
 }
+
+// ── Core committee validation types ───────────────────────────
+
+export interface CoreCommitteeConfig {
+  committeeSize: number;
+  approvalThreshold: number;
+  rejectionThreshold: number;
+  reviewPeriodMs: number;
+  minStakeCents: number;
+  minValidatorReputation: number;
+  requiredAttestations: number;
+  optParamsHash?: string;
+  slashOnDisagreementCount: number;
+  slashAmountCents: number;
+}
+
+export interface CoreCommitteeSelectionAuditEntry {
+  validatorId: string;
+  reputationAtSelection: number;
+  stakeAtSelection: number;
+  weightAtSelection: number;
+  appealOutcomesAtSelection: number;
+  noShowCountAtSelection: number;
+}
+
+export interface CoreCommitteeSelectionAudit {
+  selectedAt: number;
+  candidateCount: number;
+  entries: CoreCommitteeSelectionAuditEntry[];
+}
+
+export interface CoreCommitteeVote {
+  validatorId: string;
+  decision: "approve" | "reject";
+  reasoning: string;
+  votedAt: number;
+  weight: number;
+  settlementRecipientId?: string;
+}
+
+export interface CoreCommitteeOutcome {
+  decision: "approve" | "reject";
+  decidedAt: number;
+  reason: "threshold" | "deadline";
+  approvingValidatorIds: string[];
+  rejectingValidatorIds: string[];
+  validatorRewardPayouts?: Record<string, number>;
+}
+
+export type CoreCommitteeReviewStatus = "pending" | "approved" | "rejected";
+
+export interface CoreCommitteeReview {
+  id: string;
+  missionId: string;
+  config: CoreCommitteeConfig;
+  validatorIds: string[];
+  votes: CoreCommitteeVote[];
+  status: CoreCommitteeReviewStatus;
+  outcome?: CoreCommitteeOutcome;
+  selectionAudit: CoreCommitteeSelectionAudit;
+  optParamsHash?: string;
+  attestationCount: number;
+  createdAt: number;
+  deadlineAt: number;
+}
+
+export interface ValidatorAccount {
+  validatorId: string;
+  stakeCents: number;
+  minStakeCents: number;
+  reputation: number;
+  settlementRecipientId?: string;
+  available: boolean;
+  pendingAssignments: number;
+  consecutiveDisagreements: number;
+  totalDisagreements: number;
+  totalSlashAmountCents: number;
+  appealOutcomes: number;
+  noShowCount: number;
+  stakedAt: number;
+  lastUpdatedAt: number;
+  unstakeRequestedAt?: number;
+}
+
+export interface StakeValidatorInput {
+  validatorId: string;
+  stakeCents: number;
+  settlementRecipientId?: string;
+}
+
+export interface ConfigureCommitteeInput {
+  missionId: string;
+  committeeSize?: number;
+  approvalThreshold?: number;
+  rejectionThreshold?: number;
+  reviewPeriodMs?: number;
+  minStakeCents?: number;
+  minValidatorReputation?: number;
+  requiredAttestations?: number;
+  attestationCount?: number;
+  optParamsHash?: string;
+}
+
+export interface CastCoreCommitteeVoteInput {
+  missionId: string;
+  validatorId: string;
+  decision: "approve" | "reject";
+  reasoning: string;
+  optParamsHash?: string;
+}
