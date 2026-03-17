@@ -87,8 +87,8 @@ describe("route parity audit script", () => {
       "trackOnchainTransaction",
       "triggerValidation",
     ]);
-    // 25 authoredTestFiles: 19 original + batch37 + domain utility test files (only .test.ts scanned)
-    expect(report.summary.authoredTestFiles).toBe(25);
+    // 26 authoredTestFiles: 19 original + batch37 + domain utility test files (only .test.ts scanned)
+    expect(report.summary.authoredTestFiles).toBe(26);
     expect(report.summary.testedPublicMethods).toBe(193);
     expect(report.summary.untestedPublicMethods).toBe(0);
     expect(report.summary.testedDirectHttpMethods).toBe(192);
