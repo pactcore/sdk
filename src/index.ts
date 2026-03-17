@@ -7,3 +7,4 @@ export * from "./task-classification";
 export * from "./auction";
 export * from "./nash-equilibrium";
 export * from "./auto-swap";
+export * from "./differential-privacy";
