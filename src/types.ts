@@ -1361,7 +1361,7 @@ export interface AntiSpamStakeResult {
 
 // ── Batch 4: Dispute types ─────────────────────────────────────
 
-export type DisputeStatus = "open" | "evidence" | "jury_vote" | "resolved";
+export type DisputeStatus = "open" | "evidence" | "jury_vote" | "resolved" | "expired" | "committee_review";
 
 export interface DisputeEvidence {
   submitterId: string;
@@ -1394,6 +1394,16 @@ export interface DisputeCase {
   verdict?: DisputeVerdict;
   createdAt: number;
   resolvedAt?: number;
+  // ERC-8183 fields
+  bondAmountCents?: number;
+  bondStatus?: "pending" | "locked" | "released" | "slashed";
+  bondUnit?: string;
+  bondAsset?: string;
+  evidenceDeadlineAt?: number;
+  votingDeadlineAt?: number;
+  subjectType?: string;
+  subjectRef?: string;
+  evidenceHash?: string;
 }
 
 export interface DisputeEvidenceInput {
@@ -2421,4 +2431,157 @@ export interface CrossAppSynergy {
   synergyScore: number;
   amplificationFactor: number;
   moduleCoverage: Record<EcosystemModule, ModuleCoverage>;
+}
+
+// ── ERC-8183: Committee review types ──────────────────────────
+
+export type CommitteeStatus = "voting" | "decided" | "deadlocked" | "expired";
+
+export interface CommitteeVote {
+  memberId: string;
+  vote: "approve" | "reject" | "abstain";
+  reasoning?: string;
+  votedAt: number;
+}
+
+export interface CommitteeConfig {
+  quorumPercent: number;
+  maxDurationHours: number;
+  memberIds: string[];
+  tieBreaker?: "reject" | "approve" | "escalate";
+}
+
+export interface CreateCommitteeSessionInput {
+  disputeId: string;
+  config: CommitteeConfig;
+}
+
+export interface CommitteeSession {
+  id: string;
+  disputeId: string;
+  status: CommitteeStatus;
+  config: CommitteeConfig;
+  votes: CommitteeVote[];
+  decision?: "approve" | "reject";
+  createdAt: number;
+  decidedAt?: number;
+  expiresAt: number;
+}
+
+export interface SubmitCommitteeVoteInput {
+  memberId: string;
+  vote: "approve" | "reject" | "abstain";
+  reasoning?: string;
+}
+
+// ── ERC-8183: Settlement split types ──────────────────────────
+
+export interface SettlementSplit {
+  workerPct: number;
+  validatorPct: number;
+  treasuryPct: number;
+  issuerPct: number;
+}
+
+export interface SettlementPartyAmount {
+  party: string;
+  role: "worker" | "validator" | "treasury" | "issuer";
+  amountCents: number;
+  pct: number;
+}
+
+export interface SettlementBreakdown {
+  settlementId: string;
+  totalAmountCents: number;
+  split: SettlementSplit;
+  amounts: SettlementPartyAmount[];
+  computedAt: number;
+}
+
+// ── ERC-8183: Validation pipeline types ───────────────────────
+
+export type ValidationLayer = "AutoAI" | "CommitteeReview" | "HumanJury";
+
+export interface CommitteeReviewOption {
+  enabled: boolean;
+  quorumPercent?: number;
+  maxDurationHours?: number;
+}
+
+export interface ValidationPipelineConfig {
+  taskId?: string;
+  missionId?: string;
+  layers: ValidationLayer[];
+  committeeReview?: CommitteeReviewOption;
+  autoAIThreshold?: number;
+  requireAllLayers?: boolean;
+}
+
+export interface TriggerValidationInput {
+  taskId?: string;
+  missionId?: string;
+  layer: ValidationLayer;
+  context?: Record<string, unknown>;
+}
+
+export interface TriggerValidationResult {
+  validationId: string;
+  layer: ValidationLayer;
+  status: "pending" | "running" | "passed" | "failed" | "escalated";
+  triggeredAt: number;
+  result?: unknown;
+}
+
+// ── ERC-8183: Human jury types ────────────────────────────────
+
+export interface JurorSelection {
+  jurorId: string;
+  selectedAt: number;
+  stake?: number;
+}
+
+export type JurySessionStatus = "forming" | "deliberating" | "decided" | "expired";
+
+export interface JurySession {
+  id: string;
+  disputeId: string;
+  status: JurySessionStatus;
+  jurors: JurorSelection[];
+  votes: DisputeJuryVote[];
+  verdict?: DisputeVerdict;
+  createdAt: number;
+  expiresAt: number;
+  decidedAt?: number;
+}
+
+export interface RequestJuryPanelInput {
+  disputeId: string;
+  jurorCount: number;
+  minStake?: number;
+  expiresInHours?: number;
+}
+
+export interface CastJuryVoteInput {
+  jurorId: string;
+  vote: "uphold" | "reject";
+  reasoning?: string;
+}
+
+export interface JuryExpiry {
+  sessionId: string;
+  disputeId: string;
+  expiredAt: number;
+  reason: string;
+}
+
+// ── ERC-8183: Open dispute with bond input ────────────────────
+
+export interface OpenDisputeInput {
+  missionId: string;
+  challengerId: string;
+  initialEvidence: DisputeEvidenceInput;
+  bondAmountCents: number;
+  bondAsset?: string;
+  subjectType?: string;
+  subjectRef?: string;
 }

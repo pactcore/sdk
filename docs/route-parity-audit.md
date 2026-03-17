@@ -13,13 +13,13 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 
 ## Summary
 
-- `PactSdk` exposes `172` public async methods.
-- `171` of those methods directly call HTTP routes.
+- `PactSdk` exposes `185` public async methods.
+- `184` of those methods directly call HTTP routes.
 - `167` implemented `core` routes are audited.
 - Missing SDK coverage for implemented `core` routes: `0`.
 - Composite helpers: `querySettlementReconciliationRecords()`.
-- Forward-compatible SDK-only direct methods without matching audited `core` routes: `getAntiSpamStake()`, `recordCanonicalBlock()`, `recordOnchainTransactionInclusion()`, `trackOnchainTransaction()`.
-- Authored TypeScript tests cover `172` / `172` public methods and `171` / `171` direct HTTP methods.
+- Forward-compatible SDK-only direct methods without matching audited `core` routes: `castJuryVote()`, `closeEvidencePeriod()`, `createCommitteeSession()`, `expireDispute()`, `expireJurySession()`, `getAntiSpamStake()`, `getCommitteeSession()`, `getSettlementBreakdown()`, `getSettlementSplits()`, `getValidationPipelineConfig()`, `openDispute()`, `recordCanonicalBlock()`, `recordOnchainTransactionInclusion()`, `requestJuryPanel()`, `submitCommitteeVote()`, `trackOnchainTransaction()`, `triggerValidation()`.
+- Authored TypeScript tests cover `185` / `185` public methods and `184` / `184` direct HTTP methods.
 
 ## Core Route Family Coverage
 
@@ -34,7 +34,7 @@ This file is generated from `scripts/route-parity-audit.mjs`.
 
 ## SDK Surface Test Coverage
 
-- Authored TypeScript test files scanned: `18`.
+- Authored TypeScript test files scanned: `19`.
 - Untested public methods: `0`.
 - Untested direct HTTP methods: `0`.
 - Every public `PactSdk` method is referenced by at least one authored TypeScript test.
@@ -47,10 +47,23 @@ None. Every audited implemented `core` route currently has direct `PactSdk` cove
 
 | SDK method | Route | Note |
 |---|---|---|
+| `castJuryVote()` | `POST /disputes/jury/sessions/${encodeURIComponent(sessionId)}/vote` | no matching audited core route yet |
+| `closeEvidencePeriod()` | `POST /disputes/${encodeURIComponent(disputeId)}/close-evidence` | no matching audited core route yet |
+| `createCommitteeSession()` | `POST /disputes/committee/sessions` | no matching audited core route yet |
+| `expireDispute()` | `POST /disputes/${encodeURIComponent(disputeId)}/expire` | no matching audited core route yet |
+| `expireJurySession()` | `POST /disputes/jury/sessions/${encodeURIComponent(sessionId)}/expire` | no matching audited core route yet |
 | `getAntiSpamStake()` | `GET /anti-spam/${encodeURIComponent(participantId)}/stake/${encodeURIComponent(action)}` | no matching audited core route yet |
+| `getCommitteeSession()` | `GET /disputes/committee/sessions/${encodeURIComponent(sessionId)}` | no matching audited core route yet |
+| `getSettlementBreakdown()` | `GET /economics/settlements/${encodeURIComponent(settlementId)}/breakdown` | no matching audited core route yet |
+| `getSettlementSplits()` | `GET /economics/settlements/${encodeURIComponent(settlementId)}/splits` | no matching audited core route yet |
+| `getValidationPipelineConfig()` | `GET /tasks/${encodeURIComponent(taskId)}/validation/config` | no matching audited core route yet |
+| `openDispute()` | `POST /disputes/open` | no matching audited core route yet |
 | `recordCanonicalBlock()` | `POST /onchain/finality/blocks/canonical` | no matching audited core route yet |
 | `recordOnchainTransactionInclusion()` | `POST /onchain/finality/transactions/${encodeURIComponent(txId)}/inclusion` | no matching audited core route yet |
+| `requestJuryPanel()` | `POST /disputes/jury/sessions` | no matching audited core route yet |
+| `submitCommitteeVote()` | `POST /disputes/committee/sessions/${encodeURIComponent(sessionId)}/vote` | no matching audited core route yet |
 | `trackOnchainTransaction()` | `POST /onchain/finality/transactions` | no matching audited core route yet |
+| `triggerValidation()` | `POST /validation/trigger` | no matching audited core route yet |
 
 ## Whitepaper Traceability
 
